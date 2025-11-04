@@ -29,7 +29,7 @@ Docker (Recommended for easier LLM setup)
 A machine with a CUDA-compatible GPU (highly recommended for PyTorch training and LLM inference).
 Steps
 1. Clone the Repository:
-     git clone https://github.com/Atharv1708/SentinelForge.git
+     git clone [https://github.com/Atharv1708/SentinelForge.git](https://github.com/Bhagyoday38/Agentic-AI-Security-Agent-for-Fintech-Threat-Mitigatio)
      cd SentinelForge
 
 2. Set Up Environment (Using Docker/Ollama): (Detailed steps for setting up the local LLM host (e.g., using Ollama) go here.)
