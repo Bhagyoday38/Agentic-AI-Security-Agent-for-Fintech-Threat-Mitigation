@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Security Agent Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+
+        .card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e5e7eb;
+            transition: all 0.2s ease-in-out;
+        }
+
+        @keyframes pulse-bg {
+
+            0%,
+            100% {
+                background-color: #f3f4f6;
+            }
+
+            50% {
+                background-color: #e5e7eb;
+            }
+        }
+
+        .skeleton {
+            animation: pulse-bg 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        @keyframes highlight-fade {
+            from {
+                background-color: #e0e7ff;
+            }
+
+            to {
+                background-color: transparent;
+            }
+        }
+
+        .highlight-flash {
+            animation: highlight-fade 1.5s ease-out forwards;
+        }
+
+        .status-indicator {
+            animation: ripple 1.5s infinite;
+        }
+
+        @keyframes ripple {
+            0% {
+                box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6);
+            }
+
+            70% {
+                box-shadow: 0 0 0 7px rgba(34, 197, 94, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+            }
+        }
+
+        .status-indicator.disconnected {
+            animation: none !important;
+        }
+
+        details summary::marker,
+        details summary::-webkit-details-marker {
+            display: none;
+            content: '';
+        }
+
+        details summary .details-arrow {
+            transition: transform 0.2s ease-in-out;
+        }
+
+        details[open] summary .details-arrow {
+            transform: rotate(90deg);
+        }
+
+        /* --- CORRECTED TABLE STYLE --- */
+        .log-table-container {
+            max-height: 35rem;
+            /* Set max height on the container */
+            overflow-y: auto;
+            /* Make the container scroll */
+            position: relative;
+            border-radius: 0.375rem;
+            /* rounded-md */
+            border: 1px solid #e5e7eb;
+            /* border-gray-200 */
+            background-color: white;
+        }
+
+        .log-table thead {
+            position: sticky;
+            /* Make the header sticky *within* the container */
+            top: 0;
+            z-index: 10;
+        }
+
+        .log-table thead th {
+            background-color: #f3f4f6;
+            /* gray-100 */
+        }
+
+        /* Both thead and tbody rows use fixed layout */
+        .log-table tbody tr,
+        .log-table thead tr {
+            display: table;
+            width: 100%;
+            table-layout: fixed;
+        }
+
+        /* --- END CORRECTION --- */
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a0aec0;
+        }
+
+        .tabular-nums {
+            font-variant-numeric: tabular-nums;
+        }
+    </style>
+</head>
+
+<body class="p-4 lg:p-6 bg-gray-50">
+
+    <main id="dashboard-view" class="max-w-7xl mx-auto opacity-0 transition-opacity duration-500">
+        <header class="mb-6">
+            <div class="bg-gradient-to-r from-gray-800 to-gray-900 rounded-lg shadow-lg p-5 text-white">
+                <div class="flex items-center justify-between flex-wrap gap-x-6 gap-y-3">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-indigo-500/20 p-2 rounded-lg"><svg class="w-6 h-6 text-indigo-300" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z">
+                                </path>
+                            </svg></div>
+                        <div>
+                            <h1 class="text-lg lg:text-xl font-semibold leading-tight">AI Security Agent</h1>
+                            <p class="text-white/60 text-xs">Real-time Detection & Monitoring</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div id="connection-status"
+                            class="flex items-center gap-1.5 bg-yellow-500/10 px-2.5 py-1 rounded-full border border-yellow-500/30 text-xs">
+                            <div class="status-indicator w-1.5 h-1.5 bg-yellow-400 rounded-full disconnected"></div>
+                            <span class="font-medium text-yellow-300">Connecting...</span>
+                        </div>
+                        <button id="generate-report-btn" title="Generate & Download PDF Report"
+                            class="flex items-center gap-1.5 bg-blue-500/10 px-2.5 py-1 rounded-full border border-blue-500/30 text-blue-300 hover:bg-blue-500/20 transition text-xs disabled:opacity-60 disabled:cursor-not-allowed"><svg
+                                class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                            </svg><span class="font-medium">Download Report</span></button>
+                        <button id="run-simulation-btn" title="Run Ethical Attack Simulation Test"
+                            class="flex items-center gap-1.5 bg-red-500/10 px-2.5 py-1 rounded-full border border-red-500/30 text-red-300 hover:bg-red-500/20 transition text-xs disabled:opacity-60 disabled:cursor-not-allowed"><svg
+                                class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                            </svg><span class="font-medium">Simulate Attacks</span></button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-5">
+            <div class="lg:col-span-3 space-y-5">
+                <section class="card p-4">
+                    <h2 class="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider">Event Trend (Last 30
+                        Min)</h2>
+                    <div class="chart-container" style="height: 240px;"><canvas id="attackTrendChart"></canvas></div>
+                </section>
+
+                <section class="card p-4">
+                    <h2 class="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider">Security Log</h2>
+                    <div class="log-table-container">
+                        <table class="log-table w-full text-sm table-fixed">
+                            <thead class="bg-gray-100 sticky top-0 z-10 border-b border-gray-300">
+                                <tr>
+                                    <th
+                                        class="py-2 px-3 text-left text-xs font-semibold text-gray-500 uppercase w-[15%]">
+                                        Time</th>
+                                    <th
+                                        class="py-2 px-3 text-left text-xs font-semibold text-gray-500 uppercase w-[30%]">
+                                        Type</th>
+                                    <th
+                                        class="py-2 px-3 text-left text-xs font-semibold text-gray-500 uppercase w-[20%]">
+                                        Source</th>
+                                    <th
+                                        class="py-2 px-3 text-left text-xs font-semibold text-gray-500 uppercase w-[20%]">
+                                        Severity</th>
+                                    <th
+                                        class="py-2 px-3 text-left text-xs font-semibold text-gray-500 uppercase w-[15%]">
+                                        Conf.</th>
+                                </tr>
+                            </thead>
+                            <tbody id="attackLogBody" class="divide-y divide-gray-100">
+                                <tr>
+                                    <td colspan="5" class="p-8 text-center text-gray-400 text-sm">Loading events...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+
+            <div class="lg:col-span-2 space-y-5">
+                <section class="card p-4">
+                    <h2 class="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider">System Health</h2>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center"><span
+                                class="text-xs font-medium text-gray-500">Requests / Min</span>
+                            <p id="requests" class="text-lg font-semibold text-gray-700 tabular-nums">0</p>
+                        </div>
+                        <div class="flex justify-between items-center"><span
+                                class="text-xs font-medium text-gray-500">Threats / Min</span>
+                            <p id="errors" class="text-lg font-semibold text-red-600 tabular-nums">0</p>
+                        </div>
+                        <div class="flex justify-between items-center"><span
+                                class="text-xs font-medium text-gray-500">Dashboard Users</span>
+                            <p id="ws-clients" class="text-lg font-semibold text-blue-600 tabular-nums">0</p>
+                        </div>
+                        <div class="pt-2 border-t border-gray-100">
+                            <h3 class="text-xs font-medium text-gray-500 mb-1.5">AI Analysis Status</h3>
+                            <div class="flex items-center gap-2 mb-0.5"><span id="llm-status-circle"
+                                    class="w-2 h-2 rounded-full bg-gray-400"></span><span id="llm-status-text"
+                                    class="text-sm font-semibold text-gray-600">UNKNOWN</span></div>
+                            <p id="llm-reason" class="text-xs text-gray-400 italic truncate" title="Checking status...">
+                                Checking status...</p>
+                        </div>
+                    </div>
+                </section>
+                <section class="card p-4">
+                    <h2 class="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider">Severity Distribution
+                    </h2>
+                    <div class="chart-container" style="height: 200px;"><canvas id="severityDistributionChart"></canvas>
+                    </div>
+                </section>
+                <section class="card p-4">
+                    <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                        <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">Website Monitors</h2>
+                        <button onclick="showAddWebsiteModal()" title="Add Website"
+                            class="px-2.5 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition text-xs flex items-center gap-1 shadow-sm"><svg
+                                class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 4v16m8-8H4"></path>
+                            </svg> Add</button>
+                    </div>
+                    <div id="websites-container" class="space-y-1.5 max-h-[20rem] overflow-y-auto pr-1">
+                        <div class="text-center py-5 text-xs text-gray-400">Loading websites...</div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <div id="add-website-modal"
+        class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-200"
+        onclick="hideAddWebsiteModal()">
+        <div class="card w-full max-w-md p-5 max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-md font-semibold text-gray-800">Add Website Monitor</h3><button
+                    onclick="hideAddWebsiteModal()"
+                    class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+            </div>
+            <form id="add-website-form" class="space-y-3">
+                <div><label for="website-url" class="block text-xs font-medium text-gray-600 mb-1">Website URL
+                        *</label><input type="text" id="website-url" required
+                        class="w-full px-3 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-transparent text-sm"
+                        placeholder="example.com or https://..."></div>
+                <div><label for="check-interval" class="block text-xs font-medium text-gray-600 mb-1">Interval
+                        (sec)</label><input type="number" id="check-interval" value="300" min="30" step="10"
+                        class="w-full px-3 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-transparent text-sm">
+                </div>
+                <fieldset class="pt-1">
+                    <legend class="text-xs font-medium text-gray-600 mb-1.5">Checks:</legend>
+                    <div class="grid grid-cols-2 gap-x-4 gap-y-1.5"><label class="flex items-center space-x-1.5"><input
+                                type="checkbox" id="check-ssl" checked
+                                class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"><span
+                                class="text-xs text-gray-700">SSL/TLS</span></label><label
+                            class="flex items-center space-x-1.5"><input type="checkbox" id="check-security-headers"
+                                checked
+                                class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"><span
+                                class="text-xs text-gray-700">Headers</span></label><label
+                            class="flex items-center space-x-1.5"><input type="checkbox" id="check-performance" checked
+                                class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"><span
+                                class="text-xs text-gray-700">Perf.</span></label><label
+                            class="flex items-center space-x-1.5"><input type="checkbox" id="check-content"
+                                class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"><span
+                                class="text-xs text-gray-700">Content</span></label></div>
+                </fieldset>
+                <div class="flex gap-3 pt-4 border-t border-gray-100"><button type="button"
+                        onclick="hideAddWebsiteModal()"
+                        class="flex-1 px-4 py-1.5 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition font-medium text-sm focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-gray-400">Cancel</button><button
+                        type="submit"
+                        class="flex-1 px-4 py-1.5 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition font-medium text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-indigo-500 disabled:opacity-50">Add</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="notification-container" class="fixed top-4 right-4 z-[100] w-full max-w-xs space-y-2"></div>
+
+    <script>
+        const MAX_TREND_POINTS = 30; const MAX_LOG_ROWS = 150; let attackTrendChart, severityDistributionChart; let ws; const wsRetryInterval = 5000;
+
+        // --- FUNCTION DEFINITIONS ---
+        const getSeverityStyles = (severity = 'UNKNOWN') => { const styles = { CRITICAL: { text: 'text-red-700', bg: 'bg-red-100', border: 'border-red-300' }, HIGH: { text: 'text-orange-700', bg: 'bg-orange-100', border: 'border-orange-300' }, MEDIUM: { text: 'text-amber-700', bg: 'bg-amber-100', border: 'border-amber-300' }, LOW: { text: 'text-green-700', bg: 'bg-green-100', border: 'border-green-300' }, default: { text: 'text-gray-600', bg: 'bg-gray-100', border: 'border-gray-300' } }; return styles[severity] || styles.default; };
+        const getWebsiteStatusStyles = (status = 'UNKNOWN') => { const styles = { 'HEALTHY': { text: 'text-green-600', border: 'border-l-green-400', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' }, 'TIMEOUT': { text: 'text-red-600', border: 'border-l-red-400', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' }, 'CONNECTION_ERROR': { text: 'text-red-700', border: 'border-l-red-500', icon: 'M18.364 5.636a9 9 0 010 12.728m-12.728 0a9 9 0 010-12.728m12.728 0L5.636 18.364' }, 'REQUEST_ERROR': { text: 'text-red-700', border: 'border-l-red-500', icon: 'M18.364 5.636a9 9 0 010 12.728m-12.728 0a9 9 0 010-12.728m12.728 0L5.636 18.364' }, 'MONITORING_ERROR': { text: 'text-gray-500', border: 'border-l-gray-400', icon: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' }, 'PENDING': { text: 'text-blue-500', border: 'border-l-blue-400', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' }, 'UNKNOWN': { text: 'text-gray-500', border: 'border-l-gray-400', icon: 'M8.228 9c.549-1.165 2.03-1.165 2.578 0l4.262 8.526c.549 1.165-.78 2.474-1.94 1.94l-3.4-.993a1.875 1.875 0 01-1.097 0l-3.4.993c-1.16.534-2.489-.775-1.94-1.94L8.228 9z' } }; if (status?.startsWith('HTTP_')) { const code = parseInt(status.split('_')[1] || "0"); if (code >= 500) return { text: 'text-red-600', border: 'border-l-red-400', icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' }; if (code >= 400) return { text: 'text-orange-500', border: 'border-l-orange-400', icon: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' }; } return styles[status] || styles.UNKNOWN; };
+        function renderSkeleton(count, type) { let skeletonHtml = ''; if (type === 'website') { const card = `<div class="bg-white rounded-md shadow-sm border p-3 skeleton animate-pulse"><div class="h-3.5 bg-gray-300 rounded w-3/4 mb-1.5"></div><div class="h-2.5 bg-gray-300 rounded w-1/2 mb-2.5"></div><div class="flex justify-between pt-1.5 border-t border-gray-100 mt-2"><div class="h-2.5 bg-gray-300 rounded w-1/4"></div><div class="h-2.5 bg-gray-300 rounded w-1/4"></div></div></div>`; skeletonHtml = Array(count).fill(card).join('<div class="h-1.5"></div>'); } else { const row = `<tr><td class="py-2 px-3"><div class="h-4 bg-gray-300 rounded skeleton w-16"></div></td><td class="py-2 px-3"><div class="h-4 bg-gray-300 rounded skeleton w-28"></div></td><td class="py-2 px-3"><div class="h-4 bg-gray-300 rounded skeleton w-20"></div></td><td class="py-2 px-3"><div class="h-5 bg-gray-300 rounded-full skeleton w-16"></div></td><td class="py-2 px-3"><div class="h-4 bg-gray-300 rounded skeleton w-10"></div></td></tr>`; skeletonHtml = Array(count).fill(row).join(''); } return skeletonHtml; }
+
+        function initializeCharts() { Chart.defaults.font.family = "'Inter', sans-serif"; Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(0, 0, 0, 0.7)'; Chart.defaults.plugins.tooltip.titleFont.size = 12; Chart.defaults.plugins.tooltip.bodyFont.size = 11; Chart.defaults.plugins.legend.labels.boxWidth = 10; Chart.defaults.plugins.legend.labels.padding = 10; const commonOptions = { responsive: true, maintainAspectRatio: false, animation: { duration: 300 } }; const attackCtx = document.getElementById('attackTrendChart')?.getContext('2d'); if (attackCtx) { attackTrendChart = new Chart(attackCtx, { type: 'line', data: { labels: [], datasets: [{ label: 'Events/Min', data: [], borderColor: '#6366f1', borderWidth: 1.5, tension: 0.3, fill: true, backgroundColor: 'rgba(99, 102, 241, 0.1)', pointRadius: 0, pointHoverRadius: 4 }] }, options: { ...commonOptions, scales: { y: { beginAtZero: true, ticks: { precision: 0, font: { size: 10 } } }, x: { ticks: { maxRotation: 0, autoSkipPadding: 20, font: { size: 10 } } } }, plugins: { legend: { display: false } } } }); } const severityCtx = document.getElementById('severityDistributionChart')?.getContext('2d'); if (severityCtx) { severityDistributionChart = new Chart(severityCtx, { type: 'doughnut', data: { labels: ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'], datasets: [{ data: [0, 0, 0, 0], backgroundColor: ['#dc2626', '#f97316', '#f59e0b', '#16a34a'], borderWidth: 1, borderColor: '#fff', hoverOffset: 6 }] }, options: { ...commonOptions, cutout: '70%', plugins: { legend: { display: true, position: 'right', labels: { padding: 8, font: { size: 11 } } } } } }); } }
+        function updateChartsFromLogData(logData = []) { if (!attackTrendChart || !severityDistributionChart) return; const severityCounts = { 'CRITICAL': 0, 'HIGH': 0, 'MEDIUM': 0, 'LOW': 0 }; const trendData = new Map(); logData.forEach(attack => { const severity = attack.severity || 'UNKNOWN'; if (severity in severityCounts) severityCounts[severity]++; try { const timestamp = new Date(attack.timestamp); if (isNaN(timestamp)) return; const minuteLabel = timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }); trendData.set(minuteLabel, (trendData.get(minuteLabel) || 0) + 1); } catch (e) { /* Ignore */ } }); severityDistributionChart.data.datasets[0].data = [severityCounts.CRITICAL, severityCounts.HIGH, severityCounts.MEDIUM, severityCounts.LOW]; severityDistributionChart.update('none'); const sortedLabels = Array.from(trendData.keys()).sort((a, b) => a.localeCompare(b)); const slicedLabels = sortedLabels.slice(-MAX_TREND_POINTS); const slicedData = slicedLabels.map(label => trendData.get(label)); attackTrendChart.data.labels = slicedLabels; attackTrendChart.data.datasets[0].data = slicedData; attackTrendChart.update('none'); }
+        function incrementallyUpdateCharts(attack) { if (!attackTrendChart || !severityDistributionChart || !attack) return; try { const severity = attack.severity || 'UNKNOWN'; const severityIndex = severityDistributionChart.data.labels.indexOf(severity); if (severityIndex > -1) { severityDistributionChart.data.datasets[0].data[severityIndex] = (severityDistributionChart.data.datasets[0].data[severityIndex] || 0) + 1; severityDistributionChart.update('none'); } const timestamp = new Date(attack.timestamp); if (isNaN(timestamp)) return; const minuteLabel = timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }); const labels = attackTrendChart.data.labels; const dataPoints = attackTrendChart.data.datasets[0].data; if (labels.length > 0 && labels[labels.length - 1] === minuteLabel) { dataPoints[dataPoints.length - 1] = (dataPoints[dataPoints.length - 1] || 0) + 1; } else { labels.push(minuteLabel); dataPoints.push(1); if (labels.length > MAX_TREND_POINTS) { labels.shift(); dataPoints.shift(); } } attackTrendChart.update('none'); } catch (e) { console.error("Chart update error:", e); } }
+
+        function updateMetrics(data = {}) { const requestsEl = document.getElementById("requests"); if (requestsEl) requestsEl.textContent = Number(data.requests_per_minute) || 0; const errorsEl = document.getElementById("errors"); if (errorsEl) errorsEl.textContent = Number(data.error_events_per_minute) || 0; const wsClientsEl = document.getElementById("ws-clients"); if (wsClientsEl) wsClientsEl.textContent = Number(data.active_ws_clients) || 0; const llmStatus = data.llm_status || 'UNKNOWN'; const llmReason = data.llm_reason || 'Status unavailable.'; const statusTextEl = document.getElementById("llm-status-text"); const statusCircleEl = document.getElementById("llm-status-circle"); const reasonEl = document.getElementById("llm-reason"); if (!statusTextEl || !statusCircleEl || !reasonEl) return; statusTextEl.textContent = llmStatus; reasonEl.textContent = llmReason; reasonEl.title = llmReason; statusCircleEl.className = 'w-2 h-2 rounded-full'; statusTextEl.className = 'text-sm font-semibold'; switch (llmStatus) { case 'ACTIVE': statusCircleEl.classList.add('bg-green-500'); statusTextEl.classList.add('text-green-700'); break; case 'DEGRADED': statusCircleEl.classList.add('bg-orange-500'); statusTextEl.classList.add('text-orange-600'); break; case 'OPEN': statusCircleEl.classList.add('bg-red-500'); statusTextEl.classList.add('text-red-600'); break; default: statusCircleEl.classList.add('bg-gray-400'); statusTextEl.classList.add('text-gray-600'); break; } }
+        function updateWebsiteMonitoringUI(websites = []) { const container = document.getElementById('websites-container'); if (!container) return; container.innerHTML = ''; if (websites.length === 0) { container.innerHTML = `<div class="text-center py-5 text-xs text-gray-400 website-placeholder">No websites monitored.</div>`; return; } container.innerHTML = websites.map(createWebsiteCard).join(''); }
+        function updateSingleWebsiteCard(website) { const container = document.getElementById('websites-container'); if (!container || !website || !website.url) return; const cardId = `website-card-${btoa(website.url)}`; const newCardHTML = createWebsiteCard(website); const oldCard = document.getElementById(cardId); container.querySelector('.website-placeholder')?.remove(); if (oldCard) { const isOpen = oldCard.open; oldCard.outerHTML = newCardHTML; const newCard = document.getElementById(cardId); if (newCard?.tagName === 'DETAILS') { newCard.open = isOpen; newCard.classList.add('highlight-flash'); setTimeout(() => newCard.classList.remove('highlight-flash'), 1500); } } else { container.insertAdjacentHTML('afterbegin', newCardHTML); document.getElementById(cardId)?.classList.add('fade-in'); } }
+        function createWebsiteCard(website) { const { current_health: health, config } = website || {}; const status = health?.status || 'PENDING'; const styles = getWebsiteStatusStyles(status); const respTime = health?.response_time; const sslDays = health?.ssl_days_remaining; const cardId = `website-card-${btoa(website.url)}`; let respTimeStr = (respTime != null && respTime >= 0) ? `${respTime.toFixed(0)}ms` : "-"; let sslDaysStr = typeof sslDays === 'number' ? `${sslDays} days` : "-"; let sslClasses = "font-medium text-gray-600"; if (typeof sslDays === 'number') { if (sslDays < 7) sslClasses = "font-medium text-red-600"; else if (sslDays < 30) sslClasses = "font-medium text-orange-500"; } let errorsList = ""; if (health?.errors?.length > 0) { const errorItems = health.errors.slice(0, 3).map(e => `<li class="truncate text-[11px]" title="${e}">${e}</li>`).join(''); errorsList = `<div class="mt-1.5 pt-1.5 border-t border-gray-100"><ul class="list-disc pl-4 space-y-0.5 text-red-500">${errorItems}</ul></div>`; } return ` <details id="${cardId}" class="website-card bg-white rounded-md shadow-sm border border-l-4 ${styles.border} overflow-hidden block"> <summary class="flex items-center justify-between p-2 cursor-pointer hover:bg-gray-50/70 transition"> <div class="flex items-center gap-2 min-w-0"> <svg class="w-4 h-4 ${styles.text} flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="${styles.icon}" clip-rule="evenodd"></path></svg> <div class="min-w-0 flex-1"> <p class="font-medium text-gray-700 text-xs truncate" title="${website.url}">${website.url}</p> <p class="text-[10px] ${styles.text} font-medium uppercase tracking-wide">${status.replace('_', ' ')}</p> </div> </div> <svg class="w-4 h-4 text-gray-400 details-arrow flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg> </summary> <div class="px-2.5 pb-2 pt-1.5 bg-gray-50/50 text-[11px] space-y-1 border-t border-gray-100"> <p class="flex justify-between"><span>Response:</span> <span class="font-medium ${respTime > 1500 ? 'text-red-500' : 'text-gray-600'}">${respTimeStr}</span></p> <p class="flex justify-between"><span>SSL Expiry:</span> <span class="${sslClasses}">${sslDaysStr}</span></p> ${errorsList} <div class="pt-1 text-right"> <button onclick="removeWebsite('${website.url}')" class="text-red-600 hover:text-red-800 font-medium text-[11px] hover:underline focus:outline-none">Remove</button> </div> </div> </details>`; }
+
+        // --- CORRECTED addAttackToLog (Fixes table row display) ---
+        function addAttackToLog(attack, isInitialLoad = false) {
+            console.log("[addAttackToLog] Received data:", attack);
+            const tableBody = document.getElementById("attackLogBody");
+            if (!tableBody) { console.error("[addAttackToLog] Table body 'attackLogBody' not found!"); return; }
+            tableBody.querySelector('td[colspan="5"]')?.parentElement.remove(); // Remove placeholder
+
+            const row = tableBody.insertRow(0); // Add to top
+
+            // --- FIX: Apply table-row styles to the row itself ---
+            row.style.display = 'table';
+            row.style.width = '100%';
+            row.style.tableLayout = 'fixed';
+            // --- END FIX ---
+
+            const styles = getSeverityStyles(attack.severity);
+            const confidence = typeof attack.confidence === 'number' ? `${(attack.confidence * 100).toFixed(0)}%` : 'N/A';
+            let timeStr = 'Invalid Date';
+            try { timeStr = new Date(attack.timestamp).toLocaleTimeString([], { hour12: false }); } catch (e) { console.warn("[addAttackToLog] Invalid timestamp:", attack.timestamp); }
+
+            // Apply widths via classes on the cells
+            row.innerHTML = `
+                <td class="py-1.5 px-3 font-mono text-gray-500 text-xs whitespace-nowrap w-[15%]">${timeStr}</td>
+                <td class="py-1.5 px-3 font-medium text-gray-700 text-sm whitespace-nowNrap truncate w-[30%]" title="${attack.attack_type || ''}">${attack.attack_type || 'Unknown'}</td>
+                <td class="py-1.5 px-3 text-gray-600 text-sm whitespace-nowrap w-[20%]">${attack.ip || 'SYSTEM'}</td>
+                <td class="py-1.5 px-3 whitespace-nowrap w-[20%]"><span class="px-2 py-0.5 text-[10px] font-semibold rounded-full border ${styles.bg} ${styles.text} ${styles.border}">${attack.severity || 'N/A'}</span></td>
+                <td class="py-1.5 px-3 font-medium ${styles.text} text-sm whitespace-nowrap w-[15%]">${confidence}</td>
+            `;
+
+            console.log("[addAttackToLog] Row added for:", attack.attack_type);
+
+            while (tableBody.rows.length > MAX_LOG_ROWS) { tableBody.deleteRow(-1); }
+
+            if (!isInitialLoad) {
+                console.log("[addAttackToLog] Applying styles & updating charts incrementally.");
+                row.classList.add('highlight-flash');
+                setTimeout(() => row.classList.remove('highlight-flash'), 1500);
+                if (attack.severity === 'HIGH' || attack.severity === 'CRITICAL') {
+                    showNotification(`ALERT: ${attack.severity} event - ${attack.attack_type || 'Unknown'}`, 'error');
+                }
+                incrementallyUpdateCharts(attack);
+            }
+        }
+
+        const addWebsiteModal = document.getElementById('add-website-modal');
+        function showAddWebsiteModal() { if (addWebsiteModal) { addWebsiteModal.classList.remove('hidden'); setTimeout(() => addWebsiteModal.classList.remove('opacity-0'), 10); } }
+        function hideAddWebsiteModal() { if (addWebsiteModal) { addWebsiteModal.classList.add('opacity-0'); setTimeout(() => addWebsiteModal.classList.add('hidden'), 200); } }
+
+        // --- 🔽 UPDATED REPORT FUNCTION 🔽 ---
+        async function handleGenerateReport() {
+            const btn = document.getElementById('generate-report-btn');
+            if (!btn || btn.disabled) return;
+
+            // 1. Check if charts are initialized
+            if (!attackTrendChart || !severityDistributionChart) {
+                showNotification("Charts are not ready. Please wait.", "warning");
+                return;
+            }
+
+            const originalContent = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<svg class="w-3.5 h-3.5 animate-spin mr-1" fill="none" viewBox="0 0 24 24"><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Generating...`;
+            showNotification('Generating PDF report... This may take up to 3 minutes.', 'info');
+
+            try {
+                // 2. Get Base64 images from charts
+                const trendChartImg = attackTrendChart.toBase64Image('image/png', 1.0);
+                const severityChartImg = severityDistributionChart.toBase64Image('image/png', 1.0);
+
+                // 3. POST images to the backend
+                const response = await fetch("/download_report", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        trend_chart_img: trendChartImg,
+                        severity_chart_img: severityChartImg
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ detail: `HTTP Error ${response.status}` }));
+                    throw new Error(errorData.detail || `Failed to generate report.`);
+                }
+
+                // 4. Handle the PDF blob response
+                const blob = await response.blob();
+                if (blob.type !== "application/pdf") {
+                    throw new Error("Server did not return a PDF file.");
+                }
+
+                let filename = 'ai_security_report.pdf'; // Default
+                const contentDisposition = response.headers.get('content-disposition');
+                if (contentDisposition) {
+                    const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+                    if (filenameMatch && filenameMatch.length === 2) filename = filenameMatch[1];
+                }
+
+                // 5. Create a temporary link and click it to trigger download
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none'; a.href = url; a.download = filename;
+                document.body.appendChild(a); a.click();
+                window.URL.revokeObjectURL(url); a.remove();
+
+                showNotification('Report download started!', 'success');
+
+            } catch (error) {
+                console.error('Error generating report:', error);
+                showNotification(`Error: ${error.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+            }
+        }
+        // --- 🔼 END UPDATED REPORT FUNCTION 🔼 ---
+
+        async function handleAddWebsite(event) { event.preventDefault(); const form = event.target; const urlInput = document.getElementById('website-url'); const url = urlInput.value.trim(); if (!url) return showNotification('URL cannot be empty.', 'error'); let finalUrl = url; const isLocal = url.startsWith('localhost') || url.startsWith('127.0.0.1') || url.includes(':'); if (!url.startsWith('http://') && !url.startsWith('https://') && !isLocal) { finalUrl = 'https://' + url; } else if (!url.startsWith('http://') && !url.startsWith('https://') && isLocal) { finalUrl = 'http://' + url; } const payload = { url: finalUrl, check_interval: parseInt(document.getElementById('check-interval').value) || 300, check_ssl: document.getElementById('check-ssl').checked, check_content: document.getElementById('check-content').checked, check_security_headers: document.getElementById('check-security-headers').checked, check_performance: document.getElementById('check-performance').checked, }; const submitButton = form.querySelector('button[type="submit"]'); submitButton.disabled = true; submitButton.textContent = 'Adding...'; try { const response = await fetch("/monitor/website", { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); if (!response.ok) { const errorData = await response.json().catch(() => ({ detail: 'Server error.' })); throw new Error(errorData.detail || `HTTP ${response.status}`); } const result = await response.json(); hideAddWebsiteModal(); form.reset(); showNotification(`Added '${result.url}'`, 'success'); } catch (error) { showNotification(`Error: ${error.message}`, 'error'); } finally { submitButton.disabled = false; submitButton.textContent = 'Add'; } }
+        async function removeWebsite(url) { if (!confirm(`Stop monitoring ${url}?`)) return; const cardId = `website-card-${btoa(url)}`; const cardElement = document.getElementById(cardId); if (cardElement) cardElement.style.opacity = '0.5'; try { const response = await fetch(`/monitor/website/${encodeURIComponent(url)}`, { method: 'DELETE' }); if (!response.ok) { const errorData = await response.json().catch(() => ({ detail: 'Server error.' })); throw new Error(errorData.detail || `HTTP ${response.status}`); } const result = await response.json(); cardElement?.remove(); showNotification(`Stopped monitoring '${result.url}'.`, 'success'); const container = document.getElementById('websites-container'); if (container && !container.querySelector('.website-card')) { container.innerHTML = `<div class="text-center py-5 text-xs text-gray-400 website-placeholder">No websites monitored.</div>`; } } catch (error) { showNotification(`Error: ${error.message}`, 'error'); if (cardElement) cardElement.style.opacity = '1'; } }
+        async function handleRunSimulation() { const btn = document.getElementById('run-simulation-btn'); if (!btn || btn.disabled) return; if (!confirm("Run attack simulation?")) return; const originalContent = btn.innerHTML; btn.disabled = true; btn.innerHTML = `<svg class="w-3.5 h-3.5 animate-spin mr-1" fill="none" viewBox="0 0 24 24"><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Running...`; try { const response = await fetch("/run_simulation", { method: 'POST' }); const data = await response.json().catch(() => ({})); if (!response.ok) throw new Error(data.message || `Failed to start (Status: ${response.status})`); showNotification(data.message || 'Simulation started!', 'info'); btn.dataset.restoreTimeout = setTimeout(() => { if (btn.disabled) { btn.disabled = false; btn.innerHTML = originalContent; showNotification('Sim status update timeout.', 'warning'); } }, 45000); } catch (error) { showNotification(`Error: ${error.message}`, 'error'); btn.disabled = false; btn.innerHTML = originalContent; } }
+        function handleSimulationStatusUpdate(data) { const btn = document.getElementById('run-simulation-btn'); const originalContent = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg><span class="font-medium">Simulate Attacks</span>`; if (btn && btn.dataset.restoreTimeout) { clearTimeout(parseInt(btn.dataset.restoreTimeout)); delete btn.dataset.restoreTimeout; } showNotification(data.message, data.status === 'completed' ? 'success' : (data.status === 'failed' || data.status === 'error' ? 'error' : 'info')); if (btn) { btn.disabled = false; btn.innerHTML = originalContent; } }
+        function showNotification(message, type = 'info') { const container = document.getElementById('notification-container'); if (!container) return; const colors = { success: 'bg-green-600', error: 'bg-red-600', info: 'bg-blue-600', warning: 'bg-orange-500' }; const notification = document.createElement('div'); notification.className = `w-full max-w-xs p-3 rounded-md shadow-lg text-white text-sm font-medium ${colors[type] || colors.info} fade-in flex justify-between items-center mb-2`; const messageSpan = document.createElement('span'); messageSpan.className = 'flex-1 mr-2'; messageSpan.textContent = message; const closeButton = document.createElement('button'); closeButton.innerHTML = '&times;'; closeButton.className = 'text-xl font-bold leading-none flex-shrink-0 opacity-70 hover:opacity-100 focus:outline-none'; closeButton.onclick = () => notification.remove(); notification.appendChild(messageSpan); notification.appendChild(closeButton); container.prepend(notification); setTimeout(() => notification.remove(), 6000); }
+
+        // --- DATA LOADING FUNCTIONS ---
+        async function loadAttackLog() { const tableBody = document.getElementById("attackLogBody"); if (!tableBody) return; try { const response = await fetch("/attack_log"); if (!response.ok) throw new Error(`HTTP ${response.status}`); const logData = await response.json(); if (!Array.isArray(logData)) throw new Error("Invalid log format"); populateLogTable(logData); } catch (error) { console.error('Error loading attack log:', error); if (tableBody) tableBody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500 text-sm">Error loading log: ${error.message}</td></tr>`; updateChartsFromLogData([]); } }
+        function populateLogTable(logData = []) { const tableBody = document.getElementById("attackLogBody"); if (!tableBody) return; tableBody.innerHTML = ''; if (logData.length === 0) { tableBody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-gray-400 text-sm">No security events recorded.</td></tr>`; updateChartsFromLogData([]); return; } const recentLogs = logData.slice(-MAX_LOG_ROWS); recentLogs.reverse().forEach(attack => addAttackToLog(attack, true)); updateChartsFromLogData(logData); }
+        async function loadWebsiteStatus() { const container = document.getElementById('websites-container'); if (!container) return; try { const response = await fetch("/monitor/websites"); if (!response.ok) throw new Error(`HTTP ${response.status}`); const data = await response.json(); if (!data || !Array.isArray(data.websites)) throw new Error("Invalid website data format"); updateWebsiteMonitoringUI(data.websites); } catch (error) { console.error('Error loading website status:', error); if (container) container.innerHTML = `<div class="text-center py-5 text-xs text-red-500">Error loading websites: ${error.message}</div>`; } }
+
+        // --- WEBSOCKET CONNECTION ---
+        function connectWebSocket() { const wsProtocol = window.location.protocol === "https:" ? "wss://" : "ws://"; const wsUrl = `${wsProtocol}${window.location.host}/ws`; console.log(`[WS] Connecting to ${wsUrl}`); if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) { ws.close(); } ws = new WebSocket(wsUrl); ws.onopen = () => { console.log("[WS] Connected"); showNotification('Real-time connection active.', 'success'); updateConnectionStatusIndicator(true); }; ws.onclose = (event) => { console.error(`[WS] Disconnected - Code: ${event.code}`); showNotification('Connection lost. Retrying...', 'warning'); updateConnectionStatusIndicator(false); setTimeout(connectWebSocket, wsRetryInterval + Math.random() * 1000); }; ws.onerror = (err) => { console.error('[WS] Error:', err); }; ws.onmessage = (event) => { console.log("[WS] Message received (raw):", event.data); try { const data = JSON.parse(event.data); console.log("[WS] Parsed data:", data); switch (data.type) { case "metrics_update": console.log("[WS] Processing metrics_update"); updateMetrics(data); break; case "website_update": console.log("[WS] Processing website_update"); if (data.website) updateSingleWebsiteCard(data.website); break; case "attack_detected": console.log("[WS] Processing attack_detected"); addAttackToLog(data); break; case "simulation_status": console.log("[WS] Processing simulation_status"); handleSimulationStatusUpdate(data); break; default: if (data.is_attack) { console.log("[WS] Processing legacy attack"); addAttackToLog(data); } else { console.warn("Unknown WS type:", data); } } } catch (e) { console.error("WS message error:", event.data, e); } }; }
+        function updateConnectionStatusIndicator(isConnected) { const statusDiv = document.getElementById('connection-status'); if (!statusDiv) return; const indicator = statusDiv.querySelector('.status-indicator'); const text = statusDiv.querySelector('span'); statusDiv.className = 'flex items-center gap-1.5 backdrop-blur-sm px-2.5 py-1 rounded-full border text-xs'; indicator.className = 'status-indicator w-1.5 h-1.5 rounded-full'; text.className = 'font-medium'; if (isConnected) { statusDiv.classList.add('bg-green-500/10', 'border-green-500/30'); indicator.classList.add('bg-green-400'); indicator.classList.remove('disconnected'); text.classList.add('text-green-300'); text.textContent = 'Active'; } else { statusDiv.classList.add('bg-red-500/10', 'border-red-500/30'); indicator.classList.add('bg-red-400', 'disconnected'); text.classList.add('text-red-300'); text.textContent = 'Offline'; } }
+
+        // --- PAGE INITIALIZATION ---
+        document.addEventListener("DOMContentLoaded", () => {
+            console.log("Initializing Dashboard...");
+            initializeCharts();
+            document.getElementById('add-website-form')?.addEventListener('submit', handleAddWebsite);
+            document.getElementById('run-simulation-btn')?.addEventListener('click', handleRunSimulation);
+            document.getElementById('generate-report-btn')?.addEventListener('click', handleGenerateReport);
+            const logTableBody = document.getElementById('attackLogBody'); const websiteContainer = document.getElementById('websites-container');
+            if (logTableBody) logTableBody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-gray-400 text-sm">Initializing...</td></tr>`;
+            if (websiteContainer) websiteContainer.innerHTML = `<div class="text-center py-5 text-xs text-gray-400">Initializing...</div>`;
+            setTimeout(() => { Promise.allSettled([loadAttackLog(), loadWebsiteStatus()]).then(() => console.log("Initial data fetch attempt complete.")).catch(err => console.error("Initial data load error:", err)); }, 50);
+            connectWebSocket();
+            document.getElementById('dashboard-view')?.classList.add('fade-in');
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,561 @@
+[
+  {
+    "is_attack": true,
+    "attack_type": "SQL Injection",
+    "reason": "The provided data contains a classic SQL injection attempt with the injected string 'admin' OR '1'='1--'. This is a high-severity attack that can potentially compromise the system.",
+    "severity": "CRITICAL",
+    "confidence": 1.0,
+    "timestamp": "2025-11-01T08:44:56.792198+00:00",
+    "risk_score": 1.0,
+    "risk_factors": [
+      "SQL Injection"
+    ],
+    "ip": "192.168.1.110",
+    "city": "...",
+    "country": "...",
+    "lat": 0.0,
+    "lon": 0.0,
+    "event_type": "simulated_sql_injection",
+    "user_id": null,
+    "data": {
+      "username": "admin' OR '1'='1--",
+      "password": "[MASKED]"
+    },
+    "integrity_hash": "65e9e9249640909815c0376d125ebffc43bad14e36d14bd2126caff7c52bda88"
+  },
+  {
+    "is_attack": true,
+    "attack_type": "SQL Injection",
+    "reason": "The event contains a SQL injection string 'UNION SELECT null, version(), null--'",
+    "severity": "CRITICAL",
+    "confidence": 1.0,
+    "timestamp": "2025-11-01T08:45:10.668301+00:00",
+    "risk_score": 1.0,
+    "risk_factors": [
+      "SQL Injection"
+    ],
+    "ip": "192.168.1.110",
+    "city": "...",
+    "country": "...",
+    "lat": 0.0,
+    "lon": 0.0,
+    "event_type": "simulated_sql_injection",
+    "user_id": null,
+    "data": {
+      "id": "1 UNION SELECT null, version(), null--"
+    },
+    "integrity_hash": "39e8cfa85ccd5a5800b32c32ae26a13e2ee66632b2fd854f076cedee723feb0a"
+  },
+  {
+    "is_attack": true,
+    "attack_type": "SQL Injection",
+    "reason": "The provided data attempts to exploit SQL injection vulnerability by manipulating the username field.",
+    "severity": "CRITICAL",
+    "confidence": 1.0,
+    "timestamp": "2025-11-01T08:45:17.826029+00:00",
+    "risk_score": 1.0,
+    "risk_factors": [
+      "SQL Injection"
+    ],
+    "ip": "192.168.1.110",
+    "city": "...",
+    "country": "...",
+    "lat": 0.0,
+    "lon": 0.0,
+    "event_type": "simulated_sql_injection",
+    "user_id": null,
+    "data": {
+      "username": "admin' OR '1'='1--",
+      "password": "[MASKED]"
+    },
+    "integrity_hash": "7fcc207fef0f0e8429ccec62cc8e069f4a52afb6b17c8a59b3f6b9f36751e013"
+  },
+  {
+    "is_attack": true,
+    "attack_type": "SQL Injection",
+    "reason": "The event contains a classic SQL injection pattern.",
+    "severity": "CRITICAL",
+    "confidence": 1.0,
+    "timestamp": "2025-11-01T08:45:25.222445+00:00",
+    "risk_score": 1.0,
+    "risk_factors": [
+      "SQL Injection"
+    ],
+    "ip": "192.168.1.110",
+    "city": "...",
+    "country": "...",
+    "lat": 0.0,
+    "lon": 0.0,
+    "event_type": "simulated_sql_injection",
+    "user_id": null,
+    "data": {
+      "id": "1 UNION SELECT null, version(), null--"
+    },
+    "integrity_hash": "83d2b97914b7d95dea7898445f67cc299251c22449858872a03070a45d64fbe4"
+  },
+  {
+    "is_attack": true,
+    "attack_type": "SQL Injection",
+    "reason": "The provided user data contains an SQL injection attempt.",
+    "severity": "CRITICAL",
+    "confidence": 1.0,
+    "timestamp": "2025-11-01T08:45:31.432410+00:00",
+    "risk_score": 1.0,
+    "risk_factors": [
+      "SQL Injection"
+    ],
+    "ip": "192.168.1.110",
+    "city": "...",
+    "country": "...",
+    "lat": 0.0,
+    "lon": 0.0,
+    "event_type": "simulated_sql_injection",
+    "user_id": null,
+    "data": {
+      "username": "admin' OR '1'='1--",
+      "password": "[MASKED]"
+    },
+    "integrity_hash": "a6a8040875758f78bb82d42b4ee641cf098dfe26c04399957b6ae9cc004f86a9"
+  },
+  {
+    "is_attack": true,
+    "attack_type": "XSS",
+    "reason": "Detected Simulated Cross-Site Scripting (XSS) attack in user input.",
+    "severity": "MEDIUM",
+    "confidence": 1.0,
+    "timestamp": "2025-11-01T08:45:37.970076+00:00",
+    "risk_score": 0.4,
+    "risk_factors": [
+      "XSS"
+    ],
+    "ip": "192.168.1.134",
+    "city": "...",
+    "country": "...",
+    "lat": 0.0,
+    "lon": 0.0,
+    "event_type": "simulated_xss",
+    "user_id": null,
+    "data": {
+      "search": "\"><img src=x onerror=console.error('SimulatedXSS')>"
+    },
+    "integrity_hash": "68ddff66bc6c85a64fddaedc17bfb41b86481717946d84ef42fb3aaa7fd44c16"
+  },
+  {
+    "is_attack": true,
+    "attack_type": "XSS",
+    "reason": "Script injection detected in the comment field",
+    "severity": "MEDIUM",
+    "confidence": 1.0,
+    "timestamp": "2025-11-01T08:45:43.955933+00:00",
+    "risk_score": 0.4,
+    "risk_factors": [
+      "XSS"
+    ],
+    "ip": "192.168.1.134",
+    "city": "...",
+    "country": "...",
+    "lat": 0.0,
+    "lon": 0.0,
+    "event_type": "simulated_xss",
+    "user_id": null,
+    "data": {
+      "comment": "<script>console.log('SimulatedXSS')</script>"
+    },
+    "integrity_hash": "21c69872b24261cf1e4d4f3d6a2642513ff00090f4c45882b0daa14bd68a27f4"
+  },
+  {
+    "is_attack": true,
+    "attack_type": "XSS",
+    "reason": "Script injection detected in the comment field",
+    "severity": "MEDIUM",
+    "confidence": 1.0,
+    "timestamp": "2025-11-01T08:45:49.867795+00:00",
+    "risk_score": 0.4,
+    "risk_factors": [
+      "XSS"
+    ],
+    "ip": "192.168.1.134",
+    "city": "...",
+    "country": "...",
+    "lat": 0.0,
+    "lon": 0.0,
+    "event_type": "simulated_xss",
+    "user_id": null,
+    "data": {
+      "comment": "<script>console.log('SimulatedXSS')</script>"
+    },
+    "integrity_hash": "2b81ce8dd712a89ad54eaa64b2821fcf050f51d7aee4f9391fba2e18c747c1c3"
+  },
+  {
+    "is_attack": true,
+    "attack_type": "XSS",
+    "reason": "Presence of script tag within user input suggests a potential cross-site scripting (XSS) attack.",
+    "severity": "MEDIUM",
+    "confidence": 1.0,
+    "timestamp": "2025-11-01T08:45:56.588060+00:00",
+    "risk_score": 0.4,
+    "risk_factors": [
+      "XSS"
+    ],
+    "ip": "192.168.1.134",
+    "city": "...",
+    "country": "...",
+    "lat": 0.0,
+    "lon": 0.0,
+    "event_type": "simulated_xss",
+    "user_id": null,
+    "data": {
+      "comment": "<script>console.log('SimulatedXSS')</script>"
+    },
+    "integrity_hash": "c6181e11c8e38d103454e42aa0ea76627c2952286e3c18ed3d57c2280c5a726a"
+  },
+  {
+    "is_attack": true,
+    "attack_type": "XSS",
+    "reason": "The event is a simulated XSS attack as indicated by the 'simulated_xss' event type.",
+    "severity": "MEDIUM",
+    "confidence": 1.0,
+    "timestamp": "2025-11-01T08:46:04.345490+00:00",
+    "risk_score": 0.4,
+    "risk_factors": [
+      "XSS"
+    ],
+    "ip": "192.168.1.134",
+    "city": "...",
+    "country": "...",
+    "lat": 0.0,
+    "lon": 0.0,
+    "event_type": "simulated_xss",
+    "user_id": null,
+    "data": {
+      "profile": "javascript:console.warn('SimulatedXSS')"
+    },
+    "integrity_hash": "f9a5105c23c69ad3d0c3539a6dee697138d8148a67768de391fdd6997e362d43"
+  },
+  {
+    "is_attack": true,
+    "attack_type": "Payment Anomaly",
+    "reason": "Simulated payment anomaly detected due to an uncommon high amount transaction of EUR 5001.00.",
+    "severity": "MEDIUM",
+    "confidence": 1.0,
+    "timestamp": "2025-11-01T08:46:11.315654+00:00",
+    "risk_score": 0.4,
+    "risk_factors": [
+      "Payment Anomaly"
+    ],
+    "ip": "192.168.1.120",
+    "city": "...",
+    "country": "...",
+    "lat": 0.0,
+    "lon": 0.0,
+    "event_type": "simulated_payment_anomaly",
+    "user_id": null,
+    "data": {
+      "payment_token": "tok_...[MASKED]",
+      "amount": "5001.00",
+      "currency": "EUR"
+    },
+    "integrity_hash": "eedad4780fe79f66f4c0ac48da8077518a5337a433fa96a44c7adbcdbe952556"
+  },
+  {
+    "is_attack": true,
+    "attack_type": "Payment Anomaly",
+    "reason": "Simulated payment anomaly event detected with a suspicious card number, CVV, expiry date, high amount, and no user ID provided.",
+    "severity": "HIGH",
+    "confidence": 1.0,
+    "timestamp": "2025-11-01T08:46:19.498513+00:00",
+    "risk_score": 0.6,
+    "risk_factors": [
+      "Payment Anomaly"
+    ],
+    "ip": "192.168.1.120",
+    "city": "...",
+    "country": "...",
+    "lat": 0.0,
+    "lon": 0.0,
+    "event_type": "simulated_payment_anomaly",
+    "user_id": null,
+    "data": {
+      "card_number": "XXXX-XXXX-XXXX-5150",
+      "cvv": "535",
+      "expiry_date": "12/28",
+      "amount": "9999.99",
+      "currency": "USD"
+    },
+    "integrity_hash": "b50ff9fdec55600904305de1b6e8f7395ecbd0bdfdcb4b63a87b183c4a4d55a3"
+  },
+  {
+    "is_attack": true,
+    "attack_type": "Payment Anomaly",
+    "reason": "Simulated payment anomaly detected with an unusually high amount and non-standard currency.",
+    "severity": "MEDIUM",
+    "confidence": 1.0,
+    "timestamp": "2025-11-01T08:46:28.213732+00:00",
+    "risk_score": 0.4,
+    "risk_factors": [
+      "Payment Anomaly"
+    ],
+    "ip": "192.168.1.120",
+    "city": "...",
+    "country": "...",
+    "lat": 0.0,
+    "lon": 0.0,
+    "event_type": "simulated_payment_anomaly",
+    "user_id": null,
+    "data": {
+      "payment_token": "tok_...[MASKED]",
+      "amount": "5001.00",
+      "currency": "EUR"
+    },
+    "integrity_hash": "a0097177bb6c613ca9f6607b8970b43bf9ba8242ff6029dd28e957f69985ed30"
+  },
+  {
+    "is_attack": true,
+    "attack_type": "Payment Anomaly",
+    "reason": "Simulated payment anomaly detected due to an uncommon transaction amount",
+    "severity": "MEDIUM",
+    "confidence": 1.0,
+    "timestamp": "2025-11-01T08:46:34.333418+00:00",
+    "risk_score": 0.4,
+    "risk_factors": [
+      "Payment Anomaly"
+    ],
+    "ip": "192.168.1.120",
+    "city": "...",
+    "country": "...",
+    "lat": 0.0,
+    "lon": 0.0,
+    "event_type": "simulated_payment_anomaly",
+    "user_id": null,
+    "data": {
+      "payment_token": "tok_...[MASKED]",
+      "amount": "5001.00",
+      "currency": "EUR"
+    },
+    "integrity_hash": "06f93dc4ca1492493bd1a494e3d5ac47518ddf5d13fd6abe3f3ea085e1fddbbd"
+  },
+  {
+    "is_attack": true,
+    "attack_type": "Payment Anomaly",
+    "reason": "Simulated payment anomaly with suspicious data (card number, cvv, amount and currency).",
+    "severity": "CRITICAL",
+    "confidence": 1.0,
+    "timestamp": "2025-11-01T08:46:41.484780+00:00",
+    "risk_score": 1.0,
+    "risk_factors": [
+      "Payment Anomaly"
+    ],
+    "ip": "192.168.1.120",
+    "city": "...",
+    "country": "...",
+    "lat": 0.0,
+    "lon": 0.0,
+    "event_type": "simulated_payment_anomaly",
+    "user_id": null,
+    "data": {
+      "card_number": "XXXX-XXXX-XXXX-5150",
+      "cvv": "535",
+      "expiry_date": "12/28",
+      "amount": "9999.99",
+      "currency": "USD"
+    },
+    "integrity_hash": "e0698b23745844af2d0b18e961d28cb94013eef3bd93df6a1540d06210db9098"
+  },
+  {
+    "is_attack": true,
+    "attack_type": "Card Testing",
+    "reason": "Multiple payment failure events with the same card bin and a consistent reason (Invalid CVV) could indicate unauthorized access and testing of multiple cards.",
+    "severity": "MEDIUM",
+    "confidence": 0.95,
+    "timestamp": "2025-11-01T08:46:53.671300+00:00",
+    "risk_score": 0.38,
+    "risk_factors": [
+      "Card Testing"
+    ],
+    "ip": "10.10.10.2",
+    "city": "...",
+    "country": "...",
+    "lat": 0.0,
+    "lon": 0.0,
+    "event_type": "payment_failure",
+    "user_id": null,
+    "data": {
+      "card_bin": "510510",
+      "payment_token": "tok_...[MASKED]",
+      "reason": "Invalid CVV"
+    },
+    "integrity_hash": "e3c949476d4ff19db0485816b1f73765d20a8f094789c4317912263a0b061be1"
+  },
+  {
+    "is_attack": true,
+    "attack_type": "Card Testing",
+    "reason": "Multiple payment failures with similar card bin and reason, indicating potential unauthorized activity.",
+    "severity": "MEDIUM",
+    "confidence": 0.95,
+    "timestamp": "2025-11-01T08:47:01.445537+00:00",
+    "risk_score": 0.38,
+    "risk_factors": [
+      "Card Testing"
+    ],
+    "ip": "10.10.10.2",
+    "city": "...",
+    "country": "...",
+    "lat": 0.0,
+    "lon": 0.0,
+    "event_type": "payment_failure",
+    "user_id": null,
+    "data": {
+      "card_bin": "400000",
+      "payment_token": "tok_...[MASKED]",
+      "reason": "Do Not Honor"
+    },
+    "integrity_hash": "b16ce8baafbf710f161d33590e03710ed2c72c7b67ce21b9d9689935884b3c10"
+  },
+  {
+    "is_attack": true,
+    "attack_type": "Card Testing",
+    "reason": "IP 10.10.10.2 had 5 payment failures for distinct cards/tokens in 5 min.",
+    "severity": "CRITICAL",
+    "confidence": 0.95,
+    "timestamp": "2025-11-01T08:47:13.692280+00:00",
+    "risk_score": 0.95,
+    "risk_factors": [
+      "Card Testing"
+    ],
+    "ip": "10.10.10.2",
+    "city": "...",
+    "country": "...",
+    "lat": 0.0,
+    "lon": 0.0,
+    "event_type": "payment_failure",
+    "user_id": null,
+    "data": {
+      "card_bin": "555555",
+      "payment_token": "tok_...[MASKED]",
+      "reason": "Generic Decline"
+    },
+    "integrity_hash": "4fc6d0c25cb894868e2fd1ac3a53145a81d068ff5e5588a6e30886f97ae01ac6"
+  },
+  {
+    "is_attack": true,
+    "attack_type": "Brute Force Attempt",
+    "reason": "Multiple 'login_failure' events indicate a potential brute force attack",
+    "severity": "MEDIUM",
+    "confidence": 0.85,
+    "timestamp": "2025-11-01T08:47:14.016604+00:00",
+    "risk_score": 0.34,
+    "risk_factors": [
+      "Brute Force Attempt"
+    ],
+    "ip": "10.10.10.1",
+    "city": "...",
+    "country": "...",
+    "lat": 0.0,
+    "lon": 0.0,
+    "event_type": "login_failure",
+    "user_id": "simulated_victim",
+    "data": {
+      "username": "simulated_victim",
+      "password": "[MASKED]"
+    },
+    "integrity_hash": "a1658aa7ca3b835cd3f43157633dc94d4bb94456429b0f8955e5cf8c5c3df138"
+  },
+  {
+    "is_attack": true,
+    "attack_type": "Brute Force",
+    "reason": "User 'simulated_victim' failed login 3 times in 30s.",
+    "severity": "HIGH",
+    "confidence": 0.9,
+    "timestamp": "2025-11-01T08:47:28.232292+00:00",
+    "risk_score": 0.92,
+    "risk_factors": [
+      "Brute Force Attempt",
+      "Brute Force"
+    ],
+    "ip": "10.10.10.1",
+    "city": "...",
+    "country": "...",
+    "lat": 0.0,
+    "lon": 0.0,
+    "event_type": "login_failure",
+    "user_id": "simulated_victim",
+    "data": {
+      "username": "simulated_victim",
+      "password": "[MASKED]"
+    },
+    "integrity_hash": "93b0ab5d3f151b95d50591c44fd9c37659bdb07035019b0db9a39bd1dba53d16"
+  },
+  {
+    "is_attack": true,
+    "attack_type": "Brute Force",
+    "reason": "User 'simulated_victim' failed login 4 times in 30s.",
+    "severity": "HIGH",
+    "confidence": 0.9,
+    "timestamp": "2025-11-01T08:47:35.754280+00:00",
+    "risk_score": 0.92,
+    "risk_factors": [
+      "Brute Force Attempt",
+      "Brute Force"
+    ],
+    "ip": "10.10.10.1",
+    "city": "...",
+    "country": "...",
+    "lat": 0.0,
+    "lon": 0.0,
+    "event_type": "login_failure",
+    "user_id": "simulated_victim",
+    "data": {
+      "username": "simulated_victim",
+      "password": "[MASKED]"
+    },
+    "integrity_hash": "8010cdb01ac3d8d4fd79dae8c21547fc7e717ab0b7f6fbabe7a86bbdb0947cb3"
+  },
+  {
+    "is_attack": true,
+    "attack_type": "Brute Force",
+    "reason": "User 'simulated_victim' failed login 5 times in 30s.",
+    "severity": "HIGH",
+    "confidence": 0.9,
+    "timestamp": "2025-11-01T08:47:42.995093+00:00",
+    "risk_score": 0.6,
+    "risk_factors": [
+      "Brute Force"
+    ],
+    "ip": "10.10.10.1",
+    "city": "...",
+    "country": "...",
+    "lat": 0.0,
+    "lon": 0.0,
+    "event_type": "login_failure",
+    "user_id": "simulated_victim",
+    "data": {
+      "username": "simulated_victim",
+      "password": "[MASKED]"
+    },
+    "integrity_hash": "db48a81ca9db319812357d26a3012e2d2882d0312766a82642b69e7b56ff786f"
+  },
+  {
+    "is_attack": true,
+    "attack_type": "DDoS",
+    "reason": "Threshold exceeded: 51 req/60s from 45 IPs.",
+    "severity": "CRITICAL",
+    "confidence": 0.9,
+    "timestamp": "2025-11-01T08:47:54.600650+00:00",
+    "risk_score": 0.9,
+    "risk_factors": [
+      "DDoS"
+    ],
+    "ip": "10.20.167.203",
+    "city": "...",
+    "country": "...",
+    "lat": 0.0,
+    "lon": 0.0,
+    "event_type": "simulated_high_traffic",
+    "user_id": null,
+    "data": {
+      "req_id": "5176-42",
+      "ts": 1761986874.4413803
+    },
+    "integrity_hash": "f287859e708d2052573c7d981cbfce65930b446609ed02af470149bae4fe5725"
+  }
+]
