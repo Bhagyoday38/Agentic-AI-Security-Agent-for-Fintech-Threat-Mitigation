@@ -1,7 +1,7 @@
 # Agentic-AI-Security-Agent-for-Fintech-Threat-Mitigation
-SentinelForge: Agentic AI Security Agent for Fintech Threat Mitigation
+Agentic AI Security Agent for Fintech Threat Mitigation
 Project Overview
-SentinelForge is a cutting-edge, autonomous security API Gateway designed to protect high-value transactions and sensitive data within Fintech ecosystems. It addresses the time-to-detection gap by shifting defense from reactive signature checks to proactive, contextual reasoning using a novel three-layered defense architecture.
+Agentic-AI-Security-Agent-for-Fintech-Threat-Mitigation is a cutting-edge, autonomous security API Gateway designed to protect high-value transactions and sensitive data within Fintech ecosystems. It addresses the time-to-detection gap by shifting defense from reactive signature checks to proactive, contextual reasoning using a novel three-layered defense architecture.
 
 The system focuses on autonomously detecting and mitigating sophisticated, velocity-based threats like Account Takeover (ATO) and Card Testing.
 Key Features & Technology
@@ -30,7 +30,6 @@ A machine with a CUDA-compatible GPU (highly recommended for PyTorch training an
 Steps
 1. Clone the Repository:
      git clone https://github.com/Bhagyoday38/Agentic-AI-Security-Agent-for-Fintech-Threat-Mitigatio
-     cd SentinelForge
 
 2. Set Up Environment (Using Docker/Ollama): (Detailed steps for setting up the local LLM host (e.g., using Ollama) go here.)
 3. Install Dependencies:
