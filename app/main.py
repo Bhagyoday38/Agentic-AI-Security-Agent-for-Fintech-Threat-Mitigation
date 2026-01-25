@@ -1,4 +1,4 @@
-# ai-security-agent/app/main.py
+# app/main.py
 import logging
 import asyncio
 import httpx
@@ -15,7 +15,6 @@ from .api.websocket import broadcast_metrics_periodically
 
 
 async def ollama_health_monitor():
-    """Background monitor to reconnect LLM automatically."""
     while True:
         await asyncio.sleep(20)
         if not app_state.http_client:
@@ -24,7 +23,7 @@ async def ollama_health_monitor():
             res = await app_state.http_client.get(settings.OLLAMA_URL, timeout=5.0)
             if res.status_code == 200 and app_state.llm_circuit_state.is_open:
                 app_state.llm_circuit_state.is_open = False
-                logging.info("Ollama Restored: AI core back online.")
+                logging.info("Ollama Restored: GPU 0 Core healthy.")
         except:
             pass
 
@@ -43,13 +42,14 @@ async def lifespan(app: FastAPI):
         await app_state.http_client.aclose()
 
 app = FastAPI(title="AI Security Agent", lifespan=lifespan)
+
+# FIX for WebSocket 403 Forbidden
 app.add_middleware(CORSMiddleware, allow_origins=[
-                   "*"], allow_methods=["*"], allow_headers=["*"])
+                   "*"], allow_methods=["*"], allow_headers=["*"], allow_credentials=True)
 app.include_router(api_router)
 
-# Fix 404: Use absolute path for static files
-root_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-static_path = os.path.join(root_path, "static")
+static_path = os.path.join(os.path.dirname(
+    os.path.dirname(os.path.abspath(__file__))), "static")
 if os.path.exists(static_path):
     app.mount("/static", StaticFiles(directory=static_path), name="static")
 

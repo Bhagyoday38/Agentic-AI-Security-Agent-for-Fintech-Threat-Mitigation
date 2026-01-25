@@ -557,5 +557,141 @@
       "ts": 1761986874.4413803
     },
     "integrity_hash": "f287859e708d2052573c7d981cbfce65930b446609ed02af470149bae4fe5725"
+  },
+  {
+    "is_attack": true,
+    "attack_type": "SQL Injection",
+    "reason": "The provided username contains SQL injection pattern 'OR' and '--', which is commonly used to bypass authentication or retrieve data from the database.",
+    "severity": "High",
+    "confidence": 0.95,
+    "timestamp": "2026-01-24T14:59:10.934615+00:00",
+    "ip": "192.168.1.132",
+    "event_type": "simulated_sql_injection",
+    "data": {
+      "username": "admin' OR '1'='1--",
+      "password": "pw"
+    }
+  },
+  {
+    "is_attack": true,
+    "attack_type": "SQL Injection",
+    "reason": "The query contains a semicolon and a comment which is indicative of SQL injection attempts.",
+    "severity": "High",
+    "confidence": 0.95,
+    "timestamp": "2026-01-24T14:59:25.328644+00:00",
+    "ip": "192.168.1.132",
+    "event_type": "simulated_sql_injection",
+    "data": {
+      "query": "'; SELECT pg_sleep(1); --"
+    }
+  },
+  {
+    "is_attack": true,
+    "attack_type": "SQL Injection",
+    "reason": "The provided username contains SQL injection attempt 'OR' and hardcoded constant '1=1--', which is a common SQL injection technique.",
+    "severity": "High",
+    "confidence": 0.95,
+    "timestamp": "2026-01-24T14:59:41.793866+00:00",
+    "ip": "192.168.1.132",
+    "event_type": "simulated_sql_injection",
+    "data": {
+      "username": "admin' OR '1'='1--",
+      "password": "pw"
+    }
+  },
+  {
+    "is_attack": true,
+    "attack_type": "SQL Injection",
+    "reason": "The query contains a semicolon and comment symbol which are often used in SQL injection attacks.",
+    "severity": "High",
+    "confidence": 0.95,
+    "timestamp": "2026-01-24T14:59:55.891420+00:00",
+    "ip": "192.168.1.132",
+    "event_type": "simulated_sql_injection",
+    "data": {
+      "query": "'; SELECT pg_sleep(1); --"
+    }
+  },
+  {
+    "is_attack": true,
+    "attack_type": "Cross-Site Scripting (XSS)",
+    "reason": "Simulated XSS attack detected in the provided data.",
+    "severity": "High",
+    "confidence": 1.0,
+    "timestamp": "2026-01-24T15:00:09.369011+00:00",
+    "ip": "192.168.1.120",
+    "event_type": "simulated_xss",
+    "data": {
+      "profile": "javascript:console.warn('SimulatedXSS')"
+    }
+  },
+  {
+    "is_attack": true,
+    "attack_type": "Cross-Site Scripting (XSS)",
+    "reason": "The event contains a script tag in the comment data, which is a common method for Cross-Site Scripting attacks.",
+    "severity": "High",
+    "confidence": 1.0,
+    "timestamp": "2026-01-24T15:00:26.050991+00:00",
+    "ip": "192.168.1.120",
+    "event_type": "simulated_xss",
+    "data": {
+      "comment": "<script>console.log('SimulatedXSS')</script>"
+    }
+  },
+  {
+    "is_attack": true,
+    "attack_type": "Cross-Site Scripting (XSS)",
+    "reason": "Presence of a malicious script tag in the provided data.",
+    "severity": "High",
+    "confidence": 1.0,
+    "timestamp": "2026-01-24T15:00:39.186376+00:00",
+    "ip": "192.168.1.120",
+    "event_type": "simulated_xss",
+    "data": {
+      "comment": "<script>console.log('SimulatedXSS')</script>"
+    }
+  },
+  {
+    "is_attack": true,
+    "attack_type": "Cross-Site Scripting (XSS)",
+    "reason": "Presence of a script tag in the provided data.",
+    "severity": "High",
+    "confidence": 1.0,
+    "timestamp": "2026-01-24T15:00:52.482553+00:00",
+    "ip": "192.168.1.120",
+    "event_type": "simulated_xss",
+    "data": {
+      "comment": "<script>console.log('SimulatedXSS')</script>"
+    }
+  },
+  {
+    "is_attack": true,
+    "attack_type": "Cross-Site Scripting (XSS)",
+    "reason": "The event contains a malicious script tag '<img src=x onerror=console.error('SimulatedXSS')>' which is a common XSS attack pattern.",
+    "severity": "High",
+    "confidence": 0.95,
+    "timestamp": "2026-01-24T15:01:11.143445+00:00",
+    "ip": "192.168.1.120",
+    "event_type": "simulated_xss",
+    "data": {
+      "search": "\"><img src=x onerror=console.error('SimulatedXSS')>"
+    }
+  },
+  {
+    "is_attack": true,
+    "attack_type": "Credit Card Fraud",
+    "reason": "Unusual high transaction amount and non-standard card details.",
+    "severity": "High",
+    "confidence": 0.95,
+    "timestamp": "2026-01-24T15:01:33.992124+00:00",
+    "ip": "192.168.1.122",
+    "event_type": "simulated_payment_anomaly",
+    "data": {
+      "card_number": "4242-4242-4242-1006",
+      "cvv": "278",
+      "expiry_date": "12/28",
+      "amount": "9999.99",
+      "currency": "USD"
+    }
   }
 ]

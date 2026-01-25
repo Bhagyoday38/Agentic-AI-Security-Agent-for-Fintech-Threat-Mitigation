@@ -1,6 +1,5 @@
 # app/config.py
-import os
-from typing import List, Dict, Set
+from typing import Dict
 from pydantic_settings import BaseSettings
 
 
@@ -9,22 +8,17 @@ class Settings(BaseSettings):
     TIME_WINDOW_SECONDS: int = 60
     DOS_ATTACK_THRESHOLD: int = 50
     BRUTE_FORCE_THRESHOLD: int = 3
-    RATE_LIMIT_DURATION: int = 300
     CARD_TEST_THRESHOLD: int = 5
     ATO_TIME_WINDOW: int = 30
 
-    # LLM Configuration
-    LLM_MODEL_NAME: str = "mistral"
+    # --- LLM Configuration ---
+    LLM_MODEL_NAME: str = "gemma2:2b"
     OLLAMA_URL: str = "http://localhost:11434"
-    LLM_MAX_FAILURES: int = 3
-    LLM_COOLDOWN_SECONDS: int = 45
-    LLM_HEALTH_CHECK_INTERVAL: int = 20
+    LLM_MAX_FAILURES: int = 2
+    LLM_REQUEST_TIMEOUT: float = 10.0
 
-    # Constants
     SEVERITY_WEIGHTS: Dict[str, int] = {
-        "CRITICAL": 5, "HIGH": 3, "MEDIUM": 2, "LOW": 1, "NONE": 0
-    }
-    LOG_JSON_FILE: str = "attack_log.json"
+        "CRITICAL": 5, "HIGH": 3, "MEDIUM": 2, "LOW": 1, "NONE": 0}
 
     class Config:
         env_file = '.env'
