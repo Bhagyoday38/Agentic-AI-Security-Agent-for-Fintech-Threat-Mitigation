@@ -1,0 +1,37 @@
+version: '3.8'
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama_core
+    volumes:
+      - ollama_storage:/root/.ollama
+    ports:
+      - "11434:11434"
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+      - OLLAMA_NUM_PARALLEL=1
+      - OLLAMA_NUM_GPU_LAYERS=13
+      - OLLAMA_CONTEXT_LENGTH=2048
+      - OLLAMA_BATCH_SIZE=128
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    entrypoint: [ "/bin/bash", "-c", "ollama serve & sleep 10 && ollama run gemma2:2b 'hello' && wait" ]
+
+  app:
+    build: .
+    container_name: ai_security_agent
+    depends_on:
+      - ollama
+    ports:
+      - "8000:8000"
+    environment:
+      - OLLAMA_URL=http://ollama:11434
+    restart: always
+
+volumes:
+  ollama_storage:

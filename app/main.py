@@ -1,4 +1,3 @@
-# app/main.py
 import logging
 import asyncio
 import httpx
@@ -15,6 +14,7 @@ from .api.websocket import broadcast_metrics_periodically
 
 
 async def ollama_health_monitor():
+    """Background task to restore AI connectivity automatically."""
     while True:
         await asyncio.sleep(20)
         if not app_state.http_client:
@@ -23,37 +23,51 @@ async def ollama_health_monitor():
             res = await app_state.http_client.get(settings.OLLAMA_URL, timeout=5.0)
             if res.status_code == 200 and app_state.llm_circuit_state.is_open:
                 app_state.llm_circuit_state.is_open = False
-                logging.info("Ollama Restored: GPU 0 Core healthy.")
+                logging.info("Ollama Status: Healthy.")
         except:
             pass
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Setup resilient HTTP client for Ollama
     app_state.http_client = httpx.AsyncClient(
-        timeout=httpx.Timeout(45.0), verify=False)
-    app.state.metrics_task = asyncio.create_task(
-        broadcast_metrics_periodically())
-    app.state.health_task = asyncio.create_task(ollama_health_monitor())
+        timeout=httpx.Timeout(60.0), verify=False)
+    # Start live background tasks
+    metrics_task = asyncio.create_task(broadcast_metrics_periodically())
+    health_task = asyncio.create_task(ollama_health_monitor())
     yield
-    app.state.metrics_task.cancel()
-    app.state.health_task.cancel()
+    metrics_task.cancel()
+    health_task.cancel()
     if app_state.http_client:
         await app_state.http_client.aclose()
 
 app = FastAPI(title="AI Security Agent", lifespan=lifespan)
 
-# FIX for WebSocket 403 Forbidden
-app.add_middleware(CORSMiddleware, allow_origins=[
-                   "*"], allow_methods=["*"], allow_headers=["*"], allow_credentials=True)
+# --- FIX 403: CORS Middleware is required for WebSocket handshakes ---
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# --- FIX 404: Register API Router BEFORE mounting static files ---
 app.include_router(api_router)
 
+# Correctly locate the static folder relative to this file
 static_path = os.path.join(os.path.dirname(
     os.path.dirname(os.path.abspath(__file__))), "static")
+
 if os.path.exists(static_path):
     app.mount("/static", StaticFiles(directory=static_path), name="static")
 
 
 @app.get("/")
 async def get_index():
-    return FileResponse(os.path.join(static_path, "index.html"))
+    # Ensure index.html exists in your 'static' folder
+    index_file = os.path.join(static_path, "index.html")
+    if os.path.exists(index_file):
+        return FileResponse(index_file)
+    return {"message": "Static index.html not found. Check your folder structure."}

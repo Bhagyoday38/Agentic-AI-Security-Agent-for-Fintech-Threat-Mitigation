@@ -3,85 +3,68 @@ import asyncio
 import json
 import logging
 import time
-from typing import Set
-from fastapi import WebSocket, WebSocketDisconnect
-
+from typing import List
+from fastapi import WebSocket
 from ..state import app_state
 from ..config import settings
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("Runner")
 
 
 class ConnectionManager:
-    """Manages active WebSocket connections."""
-
     def __init__(self):
-        self.active_connections: Set[WebSocket] = set()
+        self.active_connections: List[WebSocket] = []
 
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
-        self.active_connections.add(websocket)
-        logger.info(
-            f"WebSocket client connected: {websocket.client} (Total: {len(self.active_connections)})")
+        self.active_connections.append(websocket)
 
     def disconnect(self, websocket: WebSocket):
-        self.active_connections.discard(websocket)
-        logger.info(
-            f"WebSocket client disconnected: {websocket.client} (Total: {len(self.active_connections)})")
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
 
     async def broadcast(self, message: dict):
-        if not self.active_connections:
-            # logger.debug("Broadcast skipped: No active clients.")
-            return
-        try:
-            message_json = json.dumps(message, default=str)
-        except TypeError as e:
-            logger.error(f"Msg serialization failed: {e} - Msg: {message}")
-            return
-
-        disconnected_clients = set()
-        # Iterate over a copy of the set to allow safe modification
-        for client in self.active_connections:
+        for connection in self.active_connections:
             try:
-                await client.send_text(message_json)
-            except Exception as e:
-                # --- FIX: More descriptive error log ---
-                logger.warning(
-                    f"WS send failed for {client.client}: {type(e).__name__} - {e}. Removing.")
-                disconnected_clients.add(client)
-
-        # Remove all failed clients at the end
-        self.active_connections -= disconnected_clients
+                await connection.send_json(message)
+            except Exception:
+                pass
 
 
 manager = ConnectionManager()
 
 
 async def broadcast_metrics_periodically():
-    """Periodically calculates and broadcasts system metrics via WebSocket."""
-    logger.info("Starting metrics broadcasting task...")
+    """Background task to push live stats to the dashboard."""
+    logger.info("Starting live metrics broadcasting task...")
     while True:
         try:
-            await asyncio.sleep(5)
             now = time.time()
-            cutoff = now - settings.TIME_WINDOW_SECONDS
-            while app_state.request_timestamps and app_state.request_timestamps[0] < cutoff:
-                app_state.request_timestamps.popleft()
-            requests_per_minute = len(app_state.request_timestamps)
-            while app_state.error_event_timestamps and app_state.error_event_timestamps[0] < cutoff:
-                app_state.error_event_timestamps.popleft()
-            errors_per_minute = len(app_state.error_event_timestamps)
-            llm_state = app_state.llm_circuit_state
-            llm_status = "OPEN" if llm_state.is_open else (
-                "DEGRADED" if llm_state.failure_count > 0 else "ACTIVE")
-            llm_reason = llm_state.last_error if (
-                llm_state.is_open or llm_state.failure_count > 0) else "AI analysis operational."
-            metrics = {"type": "metrics_update", "requests_per_minute": requests_per_minute, "error_events_per_minute": errors_per_minute, "monitored_websites_count": len(
-                app_state.monitored_websites), "active_ws_clients": len(manager.active_connections), "llm_status": llm_status, "llm_reason": llm_reason}
-            await manager.broadcast(metrics)
+
+            # Calculate live traffic window (last 60s)
+            recent_reqs = [
+                t for t in app_state.request_timestamps if t > now - 60]
+            recent_errs = [
+                t for t in app_state.error_event_timestamps if t > now - 60]
+
+            # Determine AI Health
+            ai_status = "BUSY" if app_state.llm_circuit_state.is_open else "ONLINE"
+            if not app_state.http_client:
+                ai_status = "OFFLINE"
+
+            metrics_payload = {
+                "type": "metrics_update",
+                "requests_per_minute": len(recent_reqs),
+                "error_events_per_minute": len(recent_errs),
+                "total_threats": len(app_state.attack_history),
+                "llm_status": ai_status,
+                "llm_reason": "Monitoring live traffic..." if ai_status == "ONLINE" else "Processing complex anomaly..."
+            }
+
+            await manager.broadcast(metrics_payload)
+            await asyncio.sleep(1)  # Update UI every second
         except asyncio.CancelledError:
-            logger.info("Metrics broadcasting task cancelled.")
             break
         except Exception as e:
-            logger.error(f"Error in metrics loop: {e}", exc_info=True)
-            await asyncio.sleep(30)
+            logger.error(f"Metrics Broadcast Error: {e}")
+            await asyncio.sleep(5)
