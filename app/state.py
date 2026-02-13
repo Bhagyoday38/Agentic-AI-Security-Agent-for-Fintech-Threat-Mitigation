@@ -1,6 +1,6 @@
 # app/state.py
 from dataclasses import dataclass, field
-from typing import Optional, Dict, Deque, Any
+from typing import Optional, Dict, Deque, Any, List
 from collections import deque, defaultdict
 import httpx
 
@@ -22,8 +22,14 @@ class AppState:
     ip_request_log: Dict[str, Deque] = field(
         default_factory=lambda: defaultdict(lambda: deque(maxlen=100)))
 
+    # Missing Attributes fixed here:
+    monitored_websites: Dict[str, Any] = field(default_factory=dict)
+    active_monitoring_tasks: Dict[str, Any] = field(default_factory=dict)
+    website_health_history: Dict[str, List] = field(
+        default_factory=lambda: defaultdict(list))
+    website_incidents: List[Dict] = field(default_factory=list)
+
     http_client: Optional[httpx.AsyncClient] = None
-    # FIX: Use the proper dataclass to prevent AttributeError
     llm_circuit_state: LLMCircuitState = field(default_factory=LLMCircuitState)
 
 

@@ -30,10 +30,10 @@ async def ollama_health_monitor():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Setup resilient HTTP client for Ollama
+
     app_state.http_client = httpx.AsyncClient(
-        timeout=httpx.Timeout(60.0), verify=False)
-    # Start live background tasks
+        timeout=httpx.Timeout(100.0), verify=False)
+
     metrics_task = asyncio.create_task(broadcast_metrics_periodically())
     health_task = asyncio.create_task(ollama_health_monitor())
     yield
@@ -44,7 +44,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="AI Security Agent", lifespan=lifespan)
 
-# --- FIX 403: CORS Middleware is required for WebSocket handshakes ---
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -53,10 +53,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- FIX 404: Register API Router BEFORE mounting static files ---
+
 app.include_router(api_router)
 
-# Correctly locate the static folder relative to this file
+
 static_path = os.path.join(os.path.dirname(
     os.path.dirname(os.path.abspath(__file__))), "static")
 
@@ -66,7 +66,7 @@ if os.path.exists(static_path):
 
 @app.get("/")
 async def get_index():
-    # Ensure index.html exists in your 'static' folder
+
     index_file = os.path.join(static_path, "index.html")
     if os.path.exists(index_file):
         return FileResponse(index_file)

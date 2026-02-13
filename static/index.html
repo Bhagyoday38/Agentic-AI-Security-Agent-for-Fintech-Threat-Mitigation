@@ -7,7 +7,6 @@
     <title>AI Security Monitor</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@500&display=swap"
         rel="stylesheet">
@@ -58,16 +57,6 @@
             box-shadow: 0 0 10px currentColor;
         }
 
-        #three-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            z-index: -1;
-            width: 100vw;
-            height: 100vh;
-            opacity: 0.3;
-        }
-
         .log-table-container {
             max-height: 28rem;
             overflow-y: auto;
@@ -94,8 +83,6 @@
 </head>
 
 <body class="p-4 lg:p-8">
-
-    <canvas id="three-canvas"></canvas>
 
     <main class="max-w-[1600px] mx-auto space-y-6 relative">
 
@@ -223,21 +210,6 @@
     <div id="notification-container" class="fixed bottom-6 right-6 z-[200] space-y-3 pointer-events-none"></div>
 
     <script>
-        // --- 3D Background ---
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('three-canvas'), alpha: true, antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        const geometry = new THREE.BufferGeometry();
-        const vertices = [];
-        for (let i = 0; i < 3000; i++) vertices.push(THREE.MathUtils.randFloatSpread(1500), THREE.MathUtils.randFloatSpread(1500), THREE.MathUtils.randFloatSpread(1500));
-        geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-        const particles = new THREE.Points(geometry, new THREE.PointsMaterial({ color: 0x00f2ff, size: 2, transparent: true, opacity: 0.4 }));
-        scene.add(particles);
-        camera.position.z = 800;
-        function animate3D() { requestAnimationFrame(animate3D); particles.rotation.y += 0.0005; renderer.render(scene, camera); }
-        animate3D();
-
         // --- DASHBOARD CORE ---
         let trendChart, distChart, ws;
         const MAX_LOG_ROWS = 50;
@@ -299,13 +271,12 @@
         }
 
         function updateChartsIncrementally(attack) {
-            // --- UPDATED: Update Doughnut Data and Labels ---
+
             const idx = severityCategories.indexOf(attack.severity);
             if (idx > -1) {
-                // Update the raw number
+
                 distChart.data.datasets[0].data[idx]++;
 
-                // Update the string label with the new number
                 distChart.data.labels = severityCategories.map((cat, i) => {
                     const count = distChart.data.datasets[0].data[i];
                     return `${cat}: ${count}`;
@@ -314,7 +285,7 @@
                 distChart.update('none');
             }
 
-            // Update Trend Graph
+
             const timeLabel = new Date(attack.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             const labels = trendChart.data.labels;
             const data = trendChart.data.datasets[0].data;
@@ -354,7 +325,7 @@
             document.getElementById('llm-reason').textContent = m.llm_reason;
         }
 
-        // Initialize UI
+
         document.addEventListener('DOMContentLoaded', () => {
             initCharts();
             connectWS();
@@ -375,7 +346,7 @@
                 a.download = `Security_Report.pdf`;
                 a.click();
             };
-            // Initial load from log file
+
             fetch('/attack_log').then(r => r.json()).then(logs => {
                 if (logs && logs.length > 0) {
                     logs.forEach(l => addAttackToLog(l, true));
