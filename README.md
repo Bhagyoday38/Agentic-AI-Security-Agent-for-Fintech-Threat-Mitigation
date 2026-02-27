@@ -1,4 +1,5 @@
 # Agentic-AI-Security-Agent-for-Fintech-Threat-Mitigation
+
 Agentic AI Security Agent for Fintech Threat Mitigation
 Project Overview
 Agentic-AI-Security-Agent-for-Fintech-Threat-Mitigation is a cutting-edge, autonomous security API Gateway designed to protect high-value transactions and sensitive data within Fintech ecosystems. It addresses the time-to-detection gap by shifting defense from reactive signature checks to proactive, contextual reasoning using a novel three-layered defense architecture.
@@ -28,8 +29,9 @@ Docker (Recommended for easier LLM setup)
 
 A machine with a CUDA-compatible GPU (highly recommended for PyTorch training and LLM inference).
 Steps
+
 1. Clone the Repository:
-     git clone https://github.com/Bhagyoday38/Agentic-AI-Security-Agent-for-Fintech-Threat-Mitigatio
+     git clone <https://github.com/Bhagyoday38/Agentic-AI-Security-Agent-for-Fintech-Threat-Mitigatio>
 
 2. Set Up Environment (Using Docker/Ollama): (Detailed steps for setting up the local LLM host (e.g., using Ollama) go here.)
 3. Install Dependencies:
@@ -41,11 +43,13 @@ Steps
 Validation and Benchmarking
 The efficacy of SentinelForge is validated by executing the ethical_attack_simulator.py script against the running gateway.
 The project success criteria are focused on demonstrating:
+
 * Measurable improvement in True Positive Rate (TPR) against multi-vector attacks (e.g., ATO, Card Testing).
 * Low Mitigation Latency (high-speed response, crucial for Fintech).
 
 🛣 Future Work
 The Agentic AI architecture provides a strong foundation for future development:
+
 * Autonomous Policy Adaptation: Implementing a Reinforcement Learning (RL) agent to dynamically adjust security thresholds based on observed threat patterns.
 * Multi-Service Deployment: Scaling the solution into a Service Mesh sidecar architecture (using tools like Istio/Envoy) for distributed infrastructure monitoring.
 * Explainable AI (XAI): Developing an auditable module to formalize the LLM's reasoning process for compliance and transparency.

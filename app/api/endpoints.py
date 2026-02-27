@@ -47,6 +47,11 @@ async def handle_event(request: Request, event_data: EventData):
         request.client.host if request.client else "127.0.0.1")
     event_data.source_ip = ip
 
+    # --- UPDATED: Autonomous Firewall Action ---
+    # Check if this IP is already blocked by the agent
+    if ip in app_state.rate_limited_ips:
+        return {"status": "blocked", "reason": "Autonomous Firewall Action"}
+
     detections = []
     # 1. Static Filters (DoS and Signatures)
     for d in [detect_dos_static, detect_static_patterns]:
@@ -54,7 +59,7 @@ async def handle_event(request: Request, event_data: EventData):
         if res:
             detections.append(res)
 
-    # 2. AI Layer (Deep behavioral analysis on GPU 0)
+    # 2. AI Layer (Deep behavioral analysis)
     if not detections:
         llm_res = await detect_llm_anomaly(event_data)
         if llm_res:
@@ -66,8 +71,14 @@ async def handle_event(request: Request, event_data: EventData):
     primary = detections[0]
     report = {**primary, "timestamp": datetime.now(
         timezone.utc).isoformat(), "ip": ip, "data": event_data.data}
+
     app_state.attack_history.append(report)
     app_state.error_event_timestamps.append(time.time())
+
+    # --- UPDATED: Self-Action Mode ---
+    # If the AI detects a CRITICAL threat, autonomously block the IP
+    if primary.get("severity") == "CRITICAL":
+        app_state.rate_limited_ips[ip] = time.time()
 
     await manager.broadcast({"type": "attack_detected", **report})
     return report
@@ -92,11 +103,14 @@ async def download_report_endpoint(request_data: ReportRequest):
         history) if a.get("attack_type") == t).get("data"))[:150]} for t in unique_types]
 
     try:
+        # --- UPDATED: Agentic AI Analysis Prompt ---
+        # Directs the AI to act as a Senior SOC Lead for behavioral clustering
         response = await app_state.http_client.post(
             f"{settings.OLLAMA_URL}/api/generate",
             json={
-                "model": "gemma2:2b",
-                "system": "Senior SOC Lead. Technical Analysis/Impact/Mitigation breakdown for each unique threat.",
+                "model": settings.LLM_MODEL_NAME,
+                "system": "You are a Senior SOC Lead. Provide an Autonomous Threat Intelligence Brief. "
+                          "Break down technical analysis, impact, and mitigation for each unique threat cluster.",
                 "prompt": json.dumps(threat_samples),
                 "stream": False,
                 "options": {"num_gpu": 33, "num_ctx": 2048}
@@ -105,7 +119,6 @@ async def download_report_endpoint(request_data: ReportRequest):
         )
         report_text = response.json().get("response", "Technical analysis failed.")
     except:
-        # Matches your reported error message [cite: 6, 30]
         report_text = "### Analysis Error\nAI Core unreachable during report generation."
 
     pdf_bytes = await asyncio.to_thread(create_pdf_report, report_text, stats, request_data.trend_chart_img, request_data.severity_chart_img)
