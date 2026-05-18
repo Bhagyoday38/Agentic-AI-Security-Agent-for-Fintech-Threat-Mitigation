@@ -5,6 +5,7 @@ import re
 import logging
 import httpx
 from typing import Optional, Dict
+from collections import deque
 from ..state import app_state
 from ..config import settings
 
@@ -12,34 +13,37 @@ logger = logging.getLogger("SecurityRunner")
 llm_semaphore = asyncio.Semaphore(1)
 
 
+# 🔴 DoS Detection
 async def detect_dos_static(event) -> Optional[Dict]:
-    """Static DoS detection based on request frequency thresholds."""
     now = time.time()
 
-    # Clear timestamps outside the current window
+    if not isinstance(app_state.request_timestamps, deque):
+        app_state.request_timestamps = deque(app_state.request_timestamps)
+
     while app_state.request_timestamps and app_state.request_timestamps[0] < now - 100:
         app_state.request_timestamps.popleft()
 
-    # Trigger alert if threshold exceeded
     if len(app_state.request_timestamps) > settings.DOS_ATTACK_THRESHOLD:
         return {
             "is_attack": True,
-            "attack_type": "DoS",
+            "attack_type": "DDoS",
             "severity": "CRITICAL",
             "confidence": 1.0,
-            "reason": f"Traffic spike detected: {len(app_state.request_timestamps)} requests in 100s window."
+            "reason": "Traffic spike detected"
         }
     return None
 
 
+# 🟡 Signature Detection
 async def detect_static_patterns(event) -> Optional[Dict]:
-    """Pattern matching for known web attack signatures."""
     payload = str(event.data).lower()
+
     patterns = {
-        "SQL Injection": r"(union\s+select|or\s+1=1|drop\s+table|--|information_schema)",
-        "XSS": r"(<script|onerror=|alert\(|javascript:|<iframe>)",
-        "Command Injection": r"(\||;|&&|`|\$\(|/bin/sh|/bin/bash|nc\s+|curl\s+)"
+        "SQL Injection": r"(union\s+select|or\s+1=1|drop\s+table|--)",
+        "XSS": r"(<script|alert\()",
+        "Command Injection": r"(\||;|&&)"
     }
+
     for atype, regex in patterns.items():
         if re.search(regex, payload):
             return {
@@ -47,62 +51,74 @@ async def detect_static_patterns(event) -> Optional[Dict]:
                 "attack_type": atype,
                 "severity": "HIGH",
                 "confidence": 0.95,
-                "reason": f"Static signature match for {atype} in request payload."
+                "reason": f"{atype} detected"
             }
+
     return None
 
 
+# 🔁 Fallback
+async def fallback_detection(event):
+    return await detect_static_patterns(event)
+
+
+# 🧠 Mistral AI Detection
 async def detect_llm_anomaly(event) -> Optional[Dict]:
-    """
-    Agentic AI Behavioral Analysis: 
-    Classifies complex threats (Botnets, Ransomware) and provides mitigation reasoning.
-    """
+
     if app_state.llm_circuit_state.is_open or not app_state.http_client:
         return None
 
-    # Non-blocking check to prevent simulation bottlenecks
     if llm_semaphore.locked():
         return None
 
     async with llm_semaphore:
         try:
-            # Updated Agentic System Prompt
-            system_instruction = (
-                "You are an Autonomous Threat Intelligence Engine. Analyze telemetry for "
-                "patterns like Botnets, Ransomware, or Credential Harvesters. "
-                "Respond ONLY with JSON: {'is_malicious': bool, 'attack_type': str, "
-                "'severity': str, 'confidence': float, 'reason': str}."
-            )
+            prompt = """
+You are a cybersecurity AI.
 
-            payload = {
-                "model": settings.LLM_MODEL_NAME,
-                "system": system_instruction,
-                "prompt": f"Analyze telemetry: {json.dumps(event.model_dump())}",
-                "stream": False,
-                "format": "json",
-                "options": {"num_gpu": 33, "num_ctx": 2048, "num_batch": 128}
-            }
+Classify into:
+DDoS, SQL Injection, XSS, Command Injection, Phishing, Malware, Brute Force, Normal
 
-            # Extended 100s timeout to handle deep behavioral clustering
+Return ONLY JSON:
+{
+ "is_malicious": true/false,
+ "attack_type": "XSS",
+ "severity": "LOW/MEDIUM/HIGH/CRITICAL",
+ "confidence": 0.0-1.0,
+ "reason": "short"
+}
+"""
+
             res = await app_state.http_client.post(
                 f"{settings.OLLAMA_URL}/api/generate",
-                json=payload,
-                timeout=100.0
+                json={
+                    "model": settings.LLM_MODEL_NAME,
+                    "prompt": f"{prompt}\n\n{json.dumps(event.model_dump())}",
+                    "stream": False
+                },
+                timeout=60.0
             )
 
-            result = json.loads(res.json().get("response"))
+            raw = res.json().get("response", "")
 
-            if result.get("is_malicious"):
-                app_state.llm_circuit_state.failure_count = 0
-                return {"is_attack": True, **result}
+            match = re.search(r"\{.*\}", raw, re.DOTALL)
+            if not match:
+                return await fallback_detection(event)
 
-        except (httpx.ReadTimeout, httpx.ConnectError):
-            app_state.llm_circuit_state.failure_count += 1
-            if app_state.llm_circuit_state.failure_count >= 3:
-                app_state.llm_circuit_state.is_open = True
-                logger.error(
-                    "AI Core Circuit Breaker: OPEN (Too many failures)")
-        except Exception as e:
-            logger.error(f"AI Analysis Error: {e}")
+            result = json.loads(match.group())
+
+            if not result.get("is_malicious"):
+                return None
+
+            return {
+                "is_attack": True,
+                "attack_type": result.get("attack_type"),
+                "severity": result.get("severity", "MEDIUM").upper(),
+                "confidence": float(result.get("confidence", 0.8)),
+                "reason": result.get("reason", "")
+            }
+
+        except Exception:
+            return await fallback_detection(event)
 
     return None

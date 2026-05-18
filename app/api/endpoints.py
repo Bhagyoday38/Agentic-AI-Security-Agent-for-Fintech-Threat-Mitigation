@@ -1,22 +1,20 @@
-import logging
-import json
 import asyncio
 import time
 from datetime import datetime, timezone
-from fastapi import APIRouter, Request, HTTPException, WebSocket, WebSocketDisconnect, Response, BackgroundTasks
-from ..config import settings
+from fastapi import APIRouter, Request, WebSocket, WebSocketDisconnect
+
 from ..state import app_state
-from ..models import EventData, ReportRequest
 from ..services.detection import (
-    detect_llm_anomaly, detect_dos_static, detect_static_patterns
+    detect_dos_static,
+    detect_static_patterns,
+    detect_llm_anomaly
 )
-from ..services.reporting import create_pdf_report
-from ..services.simulation import run_simulation_background_task
-from .websocket import manager
+from .websocket import manager, broadcast_attack_event
 
 router = APIRouter()
 
 
+# ✅ WebSocket
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
@@ -27,99 +25,51 @@ async def websocket_endpoint(websocket: WebSocket):
         manager.disconnect(websocket)
 
 
-@router.get("/attack_log")
-async def get_attack_log():
-    return list(app_state.attack_history)
+# 🔥 COMMON DETECTION FUNCTION
+async def process_event(data, ip):
+    event = type("obj", (), {
+        "data": data,
+        "model_dump": lambda: data
+    })()
 
-
-@router.post("/run_simulation")
-async def trigger_sim(background_tasks: BackgroundTasks):
-    background_tasks.add_task(run_simulation_background_task)
-    return {"status": "Simulation started"}
-
-
-@router.post("/log_event")
-async def handle_event(request: Request, event_data: EventData):
-    # Update global traffic counter immediately
     app_state.request_timestamps.append(time.time())
 
-    ip = event_data.source_ip or (
-        request.client.host if request.client else "127.0.0.1")
-    event_data.source_ip = ip
+    for detector in [detect_dos_static, detect_static_patterns, detect_llm_anomaly]:
+        result = await detector(event)
 
-    # --- UPDATED: Autonomous Firewall Action ---
-    # Check if this IP is already blocked by the agent
-    if ip in app_state.rate_limited_ips:
-        return {"status": "blocked", "reason": "Autonomous Firewall Action"}
+        if result:
+            attack = {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "source_ip": ip,
+                **result
+            }
 
-    detections = []
-    # 1. Static Filters (DoS and Signatures)
-    for d in [detect_dos_static, detect_static_patterns]:
-        res = await d(event_data)
-        if res:
-            detections.append(res)
+            app_state.attack_history.append(attack)
+            app_state.error_event_timestamps.append(time.time())
 
-    # 2. AI Layer (Deep behavioral analysis)
-    if not detections:
-        llm_res = await detect_llm_anomaly(event_data)
-        if llm_res:
-            detections.append(llm_res)
+            await broadcast_attack_event(attack)
+            return attack
 
-    if not detections:
-        return {"status": "ok"}
-
-    primary = detections[0]
-    report = {**primary, "timestamp": datetime.now(
-        timezone.utc).isoformat(), "ip": ip, "data": event_data.data}
-
-    app_state.attack_history.append(report)
-    app_state.error_event_timestamps.append(time.time())
-
-    # --- UPDATED: Self-Action Mode ---
-    # If the AI detects a CRITICAL threat, autonomously block the IP
-    if primary.get("severity") == "CRITICAL":
-        app_state.rate_limited_ips[ip] = time.time()
-
-    await manager.broadcast({"type": "attack_detected", **report})
-    return report
+    return None
 
 
-@router.post("/download_report")
-async def download_report_endpoint(request_data: ReportRequest):
-    if not app_state.http_client:
-        raise HTTPException(503, "AI Core Offline")
+# 🔥 EXTERNAL ATTACK (FIXED)
+@router.post("/ingest")
+async def ingest(request: Request):
+    data = await request.json()
+    ip = data.get("ip", request.client.host)
 
-    history = list(app_state.attack_history)
+    result = await process_event(data, ip)
 
-    # FIX: Recalculate stats directly to fix "0 Threats" error in PDF
-    stats = {
-        "total_threat_events": len(history),
-        "active_blocks": len(app_state.rate_limited_ips)
-    }
+    return result or {"status": "safe"}
 
-    unique_types = set(a.get("attack_type")
-                       for a in history if a.get("attack_type"))
-    threat_samples = [{"type": t, "vector": str(next(a for a in reversed(
-        history) if a.get("attack_type") == t).get("data"))[:150]} for t in unique_types]
 
-    try:
-        # --- UPDATED: Agentic AI Analysis Prompt ---
-        # Directs the AI to act as a Senior SOC Lead for behavioral clustering
-        response = await app_state.http_client.post(
-            f"{settings.OLLAMA_URL}/api/generate",
-            json={
-                "model": settings.LLM_MODEL_NAME,
-                "system": "You are a Senior SOC Lead. Provide an Autonomous Threat Intelligence Brief. "
-                          "Break down technical analysis, impact, and mitigation for each unique threat cluster.",
-                "prompt": json.dumps(threat_samples),
-                "stream": False,
-                "options": {"num_gpu": 33, "num_ctx": 2048}
-            },
-            timeout=180.0
-        )
-        report_text = response.json().get("response", "Technical analysis failed.")
-    except:
-        report_text = "### Analysis Error\nAI Core unreachable during report generation."
+# 🔥 INTERNAL EVENT
+@router.post("/log_event")
+async def log_event(request: Request):
+    data = await request.json()
+    ip = request.client.host
 
-    pdf_bytes = await asyncio.to_thread(create_pdf_report, report_text, stats, request_data.trend_chart_img, request_data.severity_chart_img)
-    return Response(content=pdf_bytes, media_type="application/pdf", headers={'Content-Disposition': 'attachment; filename="AI_Audit.pdf"'})
+    result = await process_event(data, ip)
+
+    return result or {"status": "safe"}

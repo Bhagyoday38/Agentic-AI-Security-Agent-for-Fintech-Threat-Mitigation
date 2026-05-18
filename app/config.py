@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     BRUTE_FORCE_THRESHOLD: int = 5
 
     # Intelligence Config
-    LLM_MODEL_NAME: str = "gemma2:2b"
+    LLM_MODEL_NAME: str = "mistal"
     OLLAMA_URL: str = "http://localhost:11434"
 
     # Notification Hooks (Agentic Alerts)

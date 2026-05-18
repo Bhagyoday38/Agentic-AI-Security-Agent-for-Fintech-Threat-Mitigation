@@ -255,9 +255,9 @@
             row.innerHTML = `
                 <td class="p-4 text-gray-500 font-mono">${new Date(attack.timestamp).toLocaleTimeString()}</td>
                 <td class="p-4 font-bold text-white">${attack.attack_type || 'Unknown'}</td>
-                <td class="p-4 text-gray-400">${attack.ip || 'Local'}</td>
+                <td class="p-4 text-gray-400">${attack.source_ip || 'Unknown'}</td>
                 <td class="p-4"><span class="px-2 py-0.5 rounded-md text-[9px] font-bold border border-white/10 ${attack.severity === 'CRITICAL' ? 'bg-red-500/20 text-red-400' : 'bg-cyan-500/10 text-cyan-400'}">${attack.severity}</span></td>
-                <td class="p-4 font-bold">${Math.round((attack.confidence || 0) * 100)}%</td>
+                <td class="p-4 font-bold">${Math.round((attack.confidence || 0.85) * 100)}%</td>
             `;
 
             if (body.rows.length > MAX_LOG_ROWS) body.deleteRow(-1);
@@ -310,7 +310,9 @@
             ws.onmessage = (e) => {
                 const data = JSON.parse(e.data);
                 if (data.type === 'metrics_update') updateMetrics(data);
-                if (data.type === 'attack_detected') addAttackToLog(data);
+                if (data.type === 'attack_event') {
+                    addAttackToLog(data.data);
+                }
                 if (data.type === 'website_update') updateWebsiteCard(data.website);
             };
             ws.onclose = () => { setTimeout(connectWS, 5000); };
@@ -321,7 +323,7 @@
             document.getElementById('errors').textContent = m.error_events_per_minute;
             document.getElementById('ws-clients').textContent = m.active_ws_clients;
             document.getElementById('llm-status-text').textContent = m.llm_status;
-            document.getElementById('llm-status-circle').className = `status-dot ${m.llm_status === 'ACTIVE' ? 'bg-green-400' : 'bg-orange-500'}`;
+            document.getElementById('llm-status-circle').className = `status-dot ${m.llm_status === 'ONLINE' ? 'bg-green-400' : 'bg-orange-500'}`;
             document.getElementById('llm-reason').textContent = m.llm_reason;
         }
 

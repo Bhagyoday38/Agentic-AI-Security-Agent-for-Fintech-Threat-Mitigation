@@ -2,19 +2,24 @@ import logging
 import asyncio
 import httpx
 import os
+import sys
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+
 from .config import settings
 from .state import app_state
 from .api.endpoints import router as api_router
-from .api.websocket import broadcast_metrics_periodically
+from .api.websocket import manager, broadcast_metrics_periodically
+
+
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
 
 async def ollama_health_monitor():
-    """Background task to restore AI connectivity automatically."""
     while True:
         await asyncio.sleep(20)
         if not app_state.http_client:
@@ -28,23 +33,34 @@ async def ollama_health_monitor():
             pass
 
 
+# 🚀 LIFESPAN HANDLER
 @asynccontextmanager
 async def lifespan(app: FastAPI):
 
+    # HTTP client init
     app_state.http_client = httpx.AsyncClient(
-        timeout=httpx.Timeout(100.0), verify=False)
+        timeout=httpx.Timeout(100.0), verify=False
+    )
 
+    # 🔥 Start background tasks
     metrics_task = asyncio.create_task(broadcast_metrics_periodically())
     health_task = asyncio.create_task(ollama_health_monitor())
+
     yield
+
+    # 🔻 Cleanup
     metrics_task.cancel()
     health_task.cancel()
+
     if app_state.http_client:
         await app_state.http_client.aclose()
 
+
+# 🚀 FASTAPI APP
 app = FastAPI(title="AI Security Agent", lifespan=lifespan)
 
 
+# 🌐 CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -54,20 +70,36 @@ app.add_middleware(
 )
 
 
+# ✅ INCLUDE API ROUTES (IMPORTANT FOR /ingest)
 app.include_router(api_router)
 
 
-static_path = os.path.join(os.path.dirname(
-    os.path.dirname(os.path.abspath(__file__))), "static")
+# 🔥 NEW: WEBSOCKET ENDPOINT (REQUIRED FOR LIVE DASHBOARD)
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            await websocket.receive_text()
+    except:
+        manager.disconnect(websocket)
+
+
+# 📁 STATIC FILES
+static_path = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "static"
+)
 
 if os.path.exists(static_path):
     app.mount("/static", StaticFiles(directory=static_path), name="static")
 
 
+# 🏠 HOME ROUTE
 @app.get("/")
 async def get_index():
-
     index_file = os.path.join(static_path, "index.html")
     if os.path.exists(index_file):
         return FileResponse(index_file)
+
     return {"message": "Static index.html not found. Check your folder structure."}
