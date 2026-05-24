@@ -4,6 +4,7 @@ import httpx
 import os
 import sys
 from contextlib import asynccontextmanager
+from typing import Any, cast
 from fastapi import FastAPI, WebSocket
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,45 +23,46 @@ if sys.platform == "win32":
 async def ollama_health_monitor():
     while True:
         await asyncio.sleep(20)
-        if not app_state.http_client:
+
+        # Cast to Any to prevent Pylance from inferring 'None' or 'Never'
+        client = cast(Any, app_state.http_client)
+        if not client:
             continue
         try:
-            res = await app_state.http_client.get(settings.OLLAMA_URL, timeout=5.0)
-            if res.status_code == 200 and app_state.llm_circuit_state.is_open:
-                app_state.llm_circuit_state.is_open = False
+            res = await client.get(settings.OLLAMA_URL, timeout=5.0)
+
+            # Cast circuit state to Any to satisfy dynamic property checks safely
+            circuit = cast(Any, app_state.llm_circuit_state)
+            if res.status_code == 200 and getattr(circuit, "is_open", False):
+                circuit.is_open = False
                 logging.info("Ollama Status: Healthy.")
-        except:
+        except Exception:
             pass
 
 
-# 🚀 LIFESPAN HANDLER
 @asynccontextmanager
 async def lifespan(app: FastAPI):
 
-    # HTTP client init
-    app_state.http_client = httpx.AsyncClient(
-        timeout=httpx.Timeout(100.0), verify=False
-    )
+    client = httpx.AsyncClient(timeout=httpx.Timeout(100.0), verify=False)
+    setattr(app_state, "http_client", client)
 
-    # 🔥 Start background tasks
     metrics_task = asyncio.create_task(broadcast_metrics_periodically())
     health_task = asyncio.create_task(ollama_health_monitor())
 
     yield
 
-    # 🔻 Cleanup
     metrics_task.cancel()
     health_task.cancel()
 
-    if app_state.http_client:
-        await app_state.http_client.aclose()
+    # Safely extract and close the async client instance
+    final_client = cast(Any, app_state.http_client)
+    if final_client:
+        await final_client.aclose()
 
 
-# 🚀 FASTAPI APP
 app = FastAPI(title="AI Security Agent", lifespan=lifespan)
 
 
-# 🌐 CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -70,22 +72,19 @@ app.add_middleware(
 )
 
 
-# ✅ INCLUDE API ROUTES (IMPORTANT FOR /ingest)
 app.include_router(api_router)
 
 
-# 🔥 NEW: WEBSOCKET ENDPOINT (REQUIRED FOR LIVE DASHBOARD)
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
     try:
         while True:
             await websocket.receive_text()
-    except:
+    except Exception:
         manager.disconnect(websocket)
 
 
-# 📁 STATIC FILES
 static_path = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
     "static"
@@ -95,7 +94,6 @@ if os.path.exists(static_path):
     app.mount("/static", StaticFiles(directory=static_path), name="static")
 
 
-# 🏠 HOME ROUTE
 @app.get("/")
 async def get_index():
     index_file = os.path.join(static_path, "index.html")

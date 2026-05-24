@@ -14,7 +14,6 @@ from .websocket import manager, broadcast_attack_event
 router = APIRouter()
 
 
-# ✅ WebSocket
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
@@ -25,7 +24,6 @@ async def websocket_endpoint(websocket: WebSocket):
         manager.disconnect(websocket)
 
 
-# 🔥 COMMON DETECTION FUNCTION
 async def process_event(data, ip):
     event = type("obj", (), {
         "data": data,
@@ -53,7 +51,6 @@ async def process_event(data, ip):
     return None
 
 
-# 🔥 EXTERNAL ATTACK (FIXED)
 @router.post("/ingest")
 async def ingest(request: Request):
     data = await request.json()
@@ -64,7 +61,6 @@ async def ingest(request: Request):
     return result or {"status": "safe"}
 
 
-# 🔥 INTERNAL EVENT
 @router.post("/log_event")
 async def log_event(request: Request):
     data = await request.json()
